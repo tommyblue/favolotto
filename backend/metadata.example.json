@@ -1,0 +1,10 @@
+[
+  {
+    "name": "path/to/file1",
+    "nfc_tag": "nfc_tag_id_1"
+  },
+  {
+    "name": "path/to/file2",
+    "nfc_tag": "nfc_tag_id_2"
+  }
+]

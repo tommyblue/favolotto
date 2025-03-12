@@ -1,0 +1,10 @@
+[
+  {
+    "name": "demo1.m4a",
+    "nfc_tag": "1234"
+  },
+  {
+    "name": "demo2.mp3",
+    "nfc_tag": "5678"
+  }
+]
