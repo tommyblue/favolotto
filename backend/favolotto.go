@@ -66,8 +66,8 @@ func (f *Favolotto) Run(ctx context.Context) error {
 	go audio.Run(ctx)
 
 	// initialize web server
-	// httpServer := NewHTTPServer(f.config.Host, f.config.Port)
-	// go httpServer.Run(ctx)
+	httpServer := NewHTTPServer(f.config.Host, f.config.Port, store)
+	go httpServer.Run(ctx)
 
 	<-ctx.Done()
 	return nil
