@@ -1,113 +1,112 @@
 package favolotto
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
-	"time"
-
-	"github.com/gopxl/beep/v2"
-	"github.com/gopxl/beep/v2/effects"
-	"github.com/gopxl/beep/v2/mp3"
-	"github.com/gopxl/beep/v2/speaker"
+	"os/exec"
 )
 
 type Audio struct {
 	in        <-chan string
+	ctrl      <-chan string
 	storePath string
 
-	ctrl        *beep.Ctrl
-	volume      *effects.Volume
 	currentFile string
+	currentCmd  *exec.Cmd
 }
 
-func NewAudio(storePath string, in <-chan string) *Audio {
+// List of the possible control commands
+var (
+	Pause  = "pause"
+	Resume = "resume"
+	Stop   = "stop"
+)
+
+func NewAudio(storePath string, in <-chan string, ctrl <-chan string) *Audio {
 	return &Audio{
 		in:        in,
+		ctrl:      ctrl,
 		storePath: storePath,
 	}
 }
 
 func (a *Audio) Run(ctx context.Context) {
+	stdin := a.setup()
 	for {
 		select {
 		case <-ctx.Done():
-			a.Cleanup()
+			a.cleanup()
 			return
 		case fname := <-a.in:
 			// if the same file is requested, do nothing
 			if a.currentFile == fname {
 				break
 			}
-			a.Cleanup()
 			fmt.Println("Audio file requested: ", fname)
 
-			f, err := os.Open(fname)
-			if err != nil {
-				log.Printf("Error opening file %s: %v", fname, err)
+			// check if the file exists
+			if _, err := os.Stat(fname); os.IsNotExist(err) {
+				log.Printf("File %s does not exist", fname)
 				continue
 			}
 
-			streamer, format, err := mp3.Decode(f)
-			if err != nil {
-				log.Printf("Error decoding file %s: %v", fname, err)
-				continue
+			a.currentFile = fname
+
+			stdin.Write([]byte(fmt.Sprintf("LOAD %s\n", fname)))
+			stdin.Write([]byte("GAIN 100\n"))
+		case ctrlCmd := <-a.ctrl:
+			switch ctrlCmd {
+			case Pause:
+				stdin.Write([]byte("PAUSE\n"))
+			case Resume:
+				stdin.Write([]byte("PAUSE\n"))
+			case Stop:
+				stdin.Write([]byte("STOP\n"))
+				a.currentFile = ""
+			default:
+				fmt.Println("Unknown control command:", ctrlCmd)
 			}
-
-			speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
-			buffer := beep.NewBuffer(format)
-			buffer.Append(streamer)
-			streamer.Close()
-			song := buffer.Streamer(0, buffer.Len())
-
-			a.ctrl = &beep.Ctrl{Streamer: song, Paused: false}
-			a.volume = &effects.Volume{
-				Streamer: a.ctrl,
-				Base:     2,
-				Volume:   0,
-				Silent:   false,
-			}
-
-			done := make(chan bool)
-			speaker.Play(beep.Seq(song, beep.Callback(func() {
-				done <- true
-			})))
-			<-done
-			streamer.Close()
 		}
 	}
 }
 
-func (a *Audio) Toggle() {
-	speaker.Lock()
-	a.ctrl.Paused = !a.ctrl.Paused
-	speaker.Unlock()
+func (a *Audio) cleanup() {
+	if a.currentCmd == nil {
+		return
+	}
+	a.currentCmd.Process.Kill()
+	a.currentCmd = nil
 }
 
-func (a *Audio) VolumeUp() {
-	if a.volume != nil {
-		speaker.Lock()
-		a.volume.Volume += 0.5
-		speaker.Unlock()
+func (a *Audio) setup() io.WriteCloser {
+	a.currentCmd = exec.Command("mpg321", "-R", "control")
+	stdin, err := a.currentCmd.StdinPipe()
+	if err != nil {
+		fmt.Println("Errore nell'aprire stdin:", err)
+		return nil
 	}
-}
-
-func (a *Audio) VolumeDown() {
-	if a.volume != nil {
-		speaker.Lock()
-		a.volume.Volume -= 0.5
-		speaker.Unlock()
-	}
-}
-
-func (a *Audio) Cleanup() {
-	if a.ctrl != nil {
-		speaker.Lock()
-		a.ctrl.Paused = true
-		speaker.Unlock()
+	stdout, err := a.currentCmd.StdoutPipe()
+	if err != nil {
+		fmt.Println("Errore nell'aprire stdout:", err)
+		return nil
 	}
 
-	a.ctrl = nil
-	a.volume = nil
+	if err := a.currentCmd.Start(); err != nil {
+		fmt.Println("Errore nell'avviare mpg321:", err)
+		return nil
+	}
+
+	// Lettura output per debug
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			fmt.Println(scanner.Text()) // Debug output mpg321
+		}
+	}()
+
+	return stdin
 }

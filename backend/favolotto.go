@@ -27,6 +27,7 @@ func New(config Config) *Favolotto {
 func (f *Favolotto) Run(ctx context.Context) error {
 	inNfc := make(chan string)   // channel for NFC tag IDs
 	inFname := make(chan string) // channel for audio files to play
+	ctrl := make(chan string)    // channel for control commands
 
 	// TODO: manage errors from the following goroutines
 
@@ -38,11 +39,19 @@ func (f *Favolotto) Run(ctx context.Context) error {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			fmt.Printf("You typed: %s\n", scanner.Text())
-			if scanner.Text() == "a" {
+			switch scanner.Text() {
+			case "1":
 				inNfc <- "1234"
-			}
-			if scanner.Text() == "b" {
+			case "2":
 				inNfc <- "5678"
+			case "p":
+				ctrl <- Pause
+			case "r":
+				ctrl <- Resume
+			case "s":
+				ctrl <- Stop
+			default:
+				fmt.Println("Unknown command")
 			}
 		}
 	}()
@@ -53,7 +62,7 @@ func (f *Favolotto) Run(ctx context.Context) error {
 	store := NewStore(f.config.Store, inNfc, inFname)
 	go store.Run(ctx)
 
-	audio := NewAudio("store", inFname)
+	audio := NewAudio("store", inFname, ctrl)
 	go audio.Run(ctx)
 
 	// initialize web server
