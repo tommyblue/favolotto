@@ -2,9 +2,9 @@ package favolotto
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/gopxl/beep/v2"
@@ -41,8 +41,9 @@ func (a *Audio) Run(ctx context.Context) {
 				break
 			}
 			a.Cleanup()
+			fmt.Println("Audio file requested: ", fname)
 
-			f, err := os.Open(filepath.Join(a.storePath, fname))
+			f, err := os.Open(fname)
 			if err != nil {
 				log.Printf("Error opening file %s: %v", fname, err)
 				continue
@@ -55,7 +56,12 @@ func (a *Audio) Run(ctx context.Context) {
 			}
 
 			speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
-			a.ctrl = &beep.Ctrl{Streamer: streamer, Paused: false}
+			buffer := beep.NewBuffer(format)
+			buffer.Append(streamer)
+			streamer.Close()
+			song := buffer.Streamer(0, buffer.Len())
+
+			a.ctrl = &beep.Ctrl{Streamer: song, Paused: false}
 			a.volume = &effects.Volume{
 				Streamer: a.ctrl,
 				Base:     2,
@@ -63,12 +69,11 @@ func (a *Audio) Run(ctx context.Context) {
 				Silent:   false,
 			}
 
-			speaker.Play(streamer)
-			// done := make(chan bool)
-			// speaker.Play(beep.Seq(streamer, beep.Callback(func() {
-			// 	done <- true
-			// })))
-			// <-done
+			done := make(chan bool)
+			speaker.Play(beep.Seq(song, beep.Callback(func() {
+				done <- true
+			})))
+			<-done
 			streamer.Close()
 		}
 	}

@@ -4,19 +4,32 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 
-	favolotto "github.com/tommyblue/favolotto/backup"
+	"github.com/tommyblue/favolotto"
 )
 
 var (
-	configFlag = flag.String("config", "config.json", "config file path")
+	version     = "--- set at buildtime ---"
+	help        = flag.Bool("help", false, "show command help")
+	configFlag  = flag.String("config", "config.json", "config file path")
+	showVersion = flag.Bool("version", false, "show command version")
 )
 
 func main() {
 	flag.Parse()
+
+	if *help {
+		flag.Usage()
+		return
+	}
+	if *showVersion {
+		fmt.Println(version)
+		return
+	}
 
 	if *configFlag == "" {
 		log.Println("config file is required")
@@ -31,12 +44,12 @@ func main() {
 
 	content, err := os.ReadFile(*configFlag)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("error reading config file: ", err)
 	}
 
 	var config favolotto.Config
 	if err := json.Unmarshal(content, &config); err != nil {
-		panic(err)
+		log.Fatal("error unmarshalling config file: ", err)
 	}
 
 	ctx, end := signal.NotifyContext(context.Background(), os.Interrupt)

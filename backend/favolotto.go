@@ -1,7 +1,10 @@
 package favolotto
 
 import (
+	"bufio"
 	"context"
+	"fmt"
+	"os"
 )
 
 type Config struct {
@@ -27,8 +30,22 @@ func (f *Favolotto) Run(ctx context.Context) error {
 
 	// TODO: manage errors from the following goroutines
 
-	nfc := NewNFC(inNfc)
-	go nfc.Run(ctx)
+	// nfc := NewNFC(inNfc)
+	// go nfc.Run(ctx)
+	go func() {
+		fmt.Println("Type whatever you want!")
+
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			fmt.Printf("You typed: %s\n", scanner.Text())
+			if scanner.Text() == "a" {
+				inNfc <- "1234"
+			}
+			if scanner.Text() == "b" {
+				inNfc <- "5678"
+			}
+		}
+	}()
 
 	// Listen for GPIO button press and play/pause audio or volume up/down
 	// Use GPIO LEDs to indicate the current state of the audio player
