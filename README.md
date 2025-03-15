@@ -67,7 +67,7 @@ card 1: vc4hdmi [vc4-hdmi], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
   Subdevice #0: subdevice #0
 ```
 
-Copy an mp3 file to the Rpi and check it works with `mpg321 file.mp3`. If you don't hear anything, check the volume with `alsamixer` (use `m` to mute/unmute channels).
+Copy an mp3 file to the Rpi and check it works with `mpg321 file.mp3` (`sudo apt install mpg321` if it is not available). If you don't hear anything, check the volume with `alsamixer` (use `m` to mute/unmute channels).
 
 ### NFC (WIP)
 
