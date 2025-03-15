@@ -76,6 +76,27 @@ sudo apt install libnfc6 libnfc-bin libnfc-examples
 nfc-list
 nfc-poll
 ```
+#### NFC PN7150
+Using the shield with the PN7150 here you could find the reference guide:
+
+https://community.nxp.com/t5/NXP-Designs-Knowledge-Base/Easy-  git clone https://github.com/NXPNFCLinux/linux_libnfc-nci.gitset-up-of-NFC-on-Raspberry-Pi/ta-p/1099034
+
+Here you could find the main example:
+
+git clone https://github.com/NXPNFCLinux/linux_libnfc-nci.git
+
+*Note*: demo and lib needs to have connected the Int pin.
+
+#### NFC PN7150 Connection:
+
+![immagine](https://github.com/user-attachments/assets/16267140-17fc-418d-b906-ea131f02a79d)
+
+- Signal | Pin No.
+- SDA -> GPIO 2
+- SCL -> GPIO 3
+- Vdd -> 3.3V
+- GND -> GND
+- Int -> GPIO23
 
 ### Result
 
