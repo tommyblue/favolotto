@@ -84,7 +84,12 @@ The reference code:
 git clone https://github.com/NXPNFCLinux/linux_libnfc-nci.git
 ```
 
-*Note*: demo and lib needs to have connected the Int pin.
+In this repo there are some example to use libnfc:
+```
+https://github.com/NXPNFCLinux/linux_libnfc-nci_examples
+```
+
+**Note**: demo and lib needs to have connected the Int pin.
 
 #### NFC PN7150 Connection:
 
