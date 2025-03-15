@@ -77,13 +77,12 @@ nfc-list
 nfc-poll
 ```
 #### NFC PN7150
-Using the shield with the PN7150 here you could find the reference guide:
+Using the shield with the PN7150 follow the [reference guide](https://community.nxp.com/t5/NXP-Designs-Knowledge-Base/Easy-set-up-of-NFC-on-Raspberry-Pi/ta-p/1099034)
 
-https://community.nxp.com/t5/NXP-Designs-Knowledge-Base/Easy-  git clone https://github.com/NXPNFCLinux/linux_libnfc-nci.gitset-up-of-NFC-on-Raspberry-Pi/ta-p/1099034
-
-Here you could find the main example:
-
+The reference code:
+```
 git clone https://github.com/NXPNFCLinux/linux_libnfc-nci.git
+```
 
 *Note*: demo and lib needs to have connected the Int pin.
 
