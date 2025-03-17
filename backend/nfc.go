@@ -36,6 +36,7 @@ func (n *Nfc) Run(ctx context.Context) {
 			if err != nil {
 				log.Fatal("Error cleaning up the reader: ", err.Error())
 			}
+			log.Printf("NFC context done")
 			return
 		default:
 			// log.Printf("%s: Waiting for a tag \n", time.Now().String())

@@ -40,6 +40,7 @@ func (a *Audio) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			a.cleanup()
+			log.Println("Audio context done")
 			return
 		case fname := <-a.in:
 			// if the same file is requested, do nothing

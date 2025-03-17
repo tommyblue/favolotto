@@ -26,21 +26,29 @@ type Metadata struct {
 	Name   string `json:"name"`
 }
 
-func NewStore(storePath string, inNfc <-chan string, inFname chan<- string) *Store {
+func NewStore(storePath string, inNfc <-chan string, inFname chan<- string) (*Store, error) {
 	store := &Store{
 		inNfc:     inNfc,
 		inFname:   inFname,
 		storePath: storePath,
 	}
+
+	_, err := os.ReadFile(filepath.Join(storePath, "metadata.json"))
+	if err != nil {
+		log.Printf("metadata file not found, creating new one")
+		store.storeMetadata([]Metadata{})
+	}
+
 	store.refreshMetadata()
 
-	return store
+	return store, nil
 }
 
 func (s *Store) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			log.Printf("store context done")
 			return
 		case nfc := <-s.inNfc:
 			for _, m := range s.data {

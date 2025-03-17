@@ -39,6 +39,7 @@ func (b *Button) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			log.Println("button context done")
 			return
 		default:
 			if b.btn.Read() == gpio.Low {

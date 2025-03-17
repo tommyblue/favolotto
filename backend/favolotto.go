@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 )
 
 type Config struct {
@@ -53,26 +54,64 @@ func (f *Favolotto) Run(ctx context.Context) error {
 		}
 	}()
 
-	// TODO: Use GPIO LEDs to indicate the current state of the audio player
+	wg := &sync.WaitGroup{}
 
-	store := NewStore(f.config.Store, inNfc, inFname)
-	go store.Run(ctx)
+	// TODO: Use LEDs to indicate the current state of the audio player
+	led := NewLED()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		led.Run(ctx)
+	}()
+
+	store, err := NewStore(f.config.Store, inNfc, inFname)
+	if err != nil {
+		log.Fatal("Error creating store: ", err.Error())
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		store.Run(ctx)
+	}()
 
 	audio := NewAudio("store", inFname, ctrl)
-	go audio.Run(ctx)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		audio.Run(ctx)
+	}()
 
 	// initialize web server
 	httpServer := NewHTTPServer(f.config.Host, f.config.Port, store)
-	go httpServer.Run(ctx)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		httpServer.Run(ctx)
+	}()
 
 	nfc := NewNFC(inNfc)
-	go nfc.Run(ctx)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		nfc.Run(ctx)
+	}()
 
 	button, err := NewButton(ctrl)
 	if err != nil {
 		log.Fatal("Error creating button: ", err.Error())
 	}
-	go button.Run(ctx)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		button.Run(ctx)
+	}()
+
+	wg.Wait()
 
 	<-ctx.Done()
 	return nil

@@ -43,9 +43,20 @@ func (s *HTTPServer) Run(ctx context.Context) {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+	go func() {
+
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+		}
+	}()
+
+	<-ctx.Done()
+
+	if err := httpServer.Shutdown(ctx); err != nil {
+		fmt.Fprintf(os.Stderr, "error shutting down server: %s\n", err)
 	}
+
+	log.Println("HTTP server stopped")
 }
 
 func (s *HTTPServer) apiMux() http.Handler {
