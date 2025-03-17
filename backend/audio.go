@@ -44,9 +44,10 @@ func (a *Audio) Run(ctx context.Context) {
 		case fname := <-a.in:
 			// if the same file is requested, do nothing
 			if a.currentFile == fname {
+				log.Println("Same audio file requested")
 				break
 			}
-			fmt.Println("Audio file requested: ", fname)
+			log.Println("Audio file requested: ", fname)
 
 			// check if the file exists
 			if _, err := os.Stat(fname); os.IsNotExist(err) {
@@ -68,7 +69,7 @@ func (a *Audio) Run(ctx context.Context) {
 				stdin.Write([]byte("STOP\n"))
 				a.currentFile = ""
 			default:
-				fmt.Println("Unknown control command:", ctrlCmd)
+				log.Println("Unknown control command:", ctrlCmd)
 			}
 		}
 	}
@@ -86,17 +87,17 @@ func (a *Audio) setup() io.WriteCloser {
 	a.currentCmd = exec.Command("mpg321", "-R", "control")
 	stdin, err := a.currentCmd.StdinPipe()
 	if err != nil {
-		fmt.Println("Errore nell'aprire stdin:", err)
+		log.Println("error opening stdin:", err)
 		return nil
 	}
 	stdout, err := a.currentCmd.StdoutPipe()
 	if err != nil {
-		fmt.Println("Errore nell'aprire stdout:", err)
+		log.Println("error opening stdout:", err)
 		return nil
 	}
 
 	if err := a.currentCmd.Start(); err != nil {
-		fmt.Println("Errore nell'avviare mpg321:", err)
+		log.Println("error starting mpg321:", err)
 		return nil
 	}
 

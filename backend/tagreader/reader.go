@@ -3,7 +3,6 @@ package tagreader
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"log"
 	"time"
 
@@ -215,7 +214,7 @@ func (reader *TagReader) readDataFromTag(target nfc.Target) error {
 		}
 
 		// Stampa il blocco letto
-		fmt.Printf("Blocco %02d: % X\n", i, resp[:n])
+		log.Printf("Block %02d: % X\n", i, resp[:n])
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -52,8 +53,7 @@ func (f *Favolotto) Run(ctx context.Context) error {
 		}
 	}()
 
-	// Listen for GPIO button press and play/pause audio or volume up/down
-	// Use GPIO LEDs to indicate the current state of the audio player
+	// TODO: Use GPIO LEDs to indicate the current state of the audio player
 
 	store := NewStore(f.config.Store, inNfc, inFname)
 	go store.Run(ctx)
@@ -67,6 +67,12 @@ func (f *Favolotto) Run(ctx context.Context) error {
 
 	nfc := NewNFC(inNfc)
 	go nfc.Run(ctx)
+
+	button, err := NewButton(ctrl)
+	if err != nil {
+		log.Fatal("Error creating button: ", err.Error())
+	}
+	go button.Run(ctx)
 
 	<-ctx.Done()
 	return nil

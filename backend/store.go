@@ -45,6 +45,7 @@ func (s *Store) Run(ctx context.Context) {
 		case nfc := <-s.inNfc:
 			for _, m := range s.data {
 				if m.NfcTag == nfc {
+					log.Printf("NFC tag %s found, playing %s", nfc, m.Name)
 					s.inFname <- filepath.Join(s.storePath, m.Name)
 					break
 				}
