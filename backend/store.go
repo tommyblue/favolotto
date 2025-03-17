@@ -16,6 +16,7 @@ type Store struct {
 	inNfc     <-chan string
 	inFname   chan<- string
 	storePath string
+	data      []Metadata
 
 	mu sync.Mutex
 }
@@ -26,22 +27,23 @@ type Metadata struct {
 }
 
 func NewStore(storePath string, inNfc <-chan string, inFname chan<- string) *Store {
-	return &Store{
+	store := &Store{
 		inNfc:     inNfc,
 		inFname:   inFname,
 		storePath: storePath,
 	}
+	store.refreshMetadata()
+
+	return store
 }
 
 func (s *Store) Run(ctx context.Context) {
-	meta := s.loadMetadata()
-
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case nfc := <-s.inNfc:
-			for _, m := range meta {
+			for _, m := range s.data {
 				if m.NfcTag == nfc {
 					s.inFname <- filepath.Join(s.storePath, m.Name)
 					break
@@ -64,10 +66,9 @@ func (s *Store) putSong(nfcTag, fname string, file multipart.File) error {
 		return fmt.Errorf("error copying file: %w", err)
 	}
 
-	// update metadata
-	meta := s.loadMetadata()
 	// check if nfcTag already exists and replace it
 	found := false
+	meta := s.data
 	for idx, m := range meta {
 		if m.NfcTag == nfcTag {
 			// remove old file
@@ -84,25 +85,17 @@ func (s *Store) putSong(nfcTag, fname string, file multipart.File) error {
 		meta = append(meta, Metadata{NfcTag: nfcTag, Name: fname})
 	}
 
-	s.mu.Lock()
-	f, err := os.Create(filepath.Join(s.storePath, "metadata.json"))
-	if err != nil {
-		return fmt.Errorf("error creating metadata file: %w", err)
+	if err := s.storeMetadata(meta); err != nil {
+		return fmt.Errorf("error storing metadata: %w", err)
 	}
-
-	if err := json.NewEncoder(f).Encode(meta); err != nil {
-		return fmt.Errorf("error encoding metadata file: %w", err)
-	}
-	f.Close()
-	s.mu.Unlock()
 
 	return nil
 }
 
 func (s *Store) deleteSong(nfcTag string) error {
-	meta := s.loadMetadata()
 	// check if nfcTag exists
 	found := false
+	meta := s.data
 	for idx, m := range meta {
 		if m.NfcTag == nfcTag {
 			// remove file
@@ -119,22 +112,45 @@ func (s *Store) deleteSong(nfcTag string) error {
 		return fmt.Errorf("nfcTag not found")
 	}
 
-	s.mu.Lock()
-	f, err := os.Create(filepath.Join(s.storePath, "metadata.json"))
-	if err != nil {
-		return fmt.Errorf("error creating metadata file: %w", err)
+	if err := s.storeMetadata(meta); err != nil {
+		return fmt.Errorf("error storing metadata: %w", err)
 	}
-
-	if err := json.NewEncoder(f).Encode(meta); err != nil {
-		return fmt.Errorf("error encoding metadata file: %w", err)
-	}
-	f.Close()
-	s.mu.Unlock()
 
 	return nil
 }
 
-func (s *Store) loadMetadata() []Metadata {
+func (s *Store) getMetadata() []Metadata {
+	return s.data
+}
+
+func (s *Store) storeMetadata(data []Metadata) error {
+	s.mu.Lock()
+	f, err := os.CreateTemp(os.TempDir(), "metadata.json")
+	if err != nil {
+		log.Printf("error creating metadata file: %w", err)
+		return fmt.Errorf("error creating metadata file: %w", err)
+	}
+
+	if err := json.NewEncoder(f).Encode(data); err != nil {
+		log.Printf("error encoding metadata file: %w", err)
+		return fmt.Errorf("error encoding metadata file: %w", err)
+	}
+	f.Close()
+	if err := os.Rename(f.Name(), filepath.Join(s.storePath, "metadata.json")); err != nil {
+		log.Printf("error renaming metadata file: %w", err)
+		return fmt.Errorf("error renaming metadata file: %w", err)
+	}
+	s.mu.Unlock()
+
+	s.refreshMetadata()
+
+	return nil
+}
+
+func (s *Store) refreshMetadata() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	var meta []Metadata
 	f, err := os.ReadFile(filepath.Join(s.storePath, "metadata.json"))
 	if err != nil {
@@ -144,5 +160,5 @@ func (s *Store) loadMetadata() []Metadata {
 		log.Fatalf("Error unmarshalling metadata file: %v", err)
 	}
 
-	return meta
+	s.data = meta
 }

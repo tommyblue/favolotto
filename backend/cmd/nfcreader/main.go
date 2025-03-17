@@ -1,24 +1,23 @@
-package favolotto
+package main
 
 import (
 	"context"
 	"log"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/tommyblue/favolotto/tagreader"
 )
 
-type Nfc struct {
-	in chan<- string
+func main() {
+	ctx, end := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer end()
+
+	run(ctx)
 }
 
-func NewNFC(in chan<- string) *Nfc {
-	return &Nfc{
-		in: in,
-	}
-}
-
-func (n *Nfc) Run(ctx context.Context) {
+func run(ctx context.Context) {
 	// Create an abstraction of the Reader, DeviceConnection string is empty if you want the library to autodetect your reader
 	rfidReader := tagreader.NewTagReader("", 19)
 	tagChannel := rfidReader.GetTagChannel()
@@ -30,7 +29,6 @@ func (n *Nfc) Run(ctx context.Context) {
 		select {
 		case tagId := <-tagChannel:
 			log.Printf("Read tag: %s \n", tagId)
-			n.in <- tagId
 		case <-ctx.Done():
 			err := rfidReader.Cleanup()
 			if err != nil {
@@ -38,7 +36,7 @@ func (n *Nfc) Run(ctx context.Context) {
 			}
 			return
 		default:
-			// log.Printf("%s: Waiting for a tag \n", time.Now().String())
+			log.Printf("%s: Waiting for a tag \n", time.Now().String())
 			time.Sleep(time.Millisecond * 300)
 		}
 	}

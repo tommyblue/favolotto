@@ -39,6 +39,7 @@ func main() {
 	}
 
 	if _, err := os.Stat(*configFlag); os.IsNotExist(err) {
+		flag.Usage()
 		log.Fatalf("config file %s does not exist", *configFlag)
 	}
 

@@ -39,7 +39,7 @@ func (s *HTTPServer) Run(ctx context.Context) {
 		Addr:           net.JoinHostPort(s.host, fmt.Sprintf("%d", s.port)),
 		Handler:        mux,
 		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
+		WriteTimeout:   300 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
@@ -57,10 +57,9 @@ func (s *HTTPServer) apiMux() http.Handler {
 }
 
 func (s *HTTPServer) listSongs() http.Handler {
-	songs := s.store.loadMetadata()
-
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			songs := s.store.getMetadata()
 			// use thing to handle request
 			// logger.Info(r.Context(), "msg", "handleSomething")
 			w.Header().Set("Content-Type", "application/json")
@@ -72,7 +71,7 @@ func (s *HTTPServer) listSongs() http.Handler {
 func (s *HTTPServer) putSong() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			r.ParseMultipartForm(10 << 20) // 10 MB
+			r.ParseMultipartForm(150 << 20) // 150 MB
 			file, header, err := r.FormFile("file")
 			if err != nil {
 				http.Error(w, "Error uploading file", http.StatusBadRequest)

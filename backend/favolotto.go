@@ -29,10 +29,6 @@ func (f *Favolotto) Run(ctx context.Context) error {
 	inFname := make(chan string) // channel for audio files to play
 	ctrl := make(chan string)    // channel for control commands
 
-	// TODO: manage errors from the following goroutines
-
-	// nfc := NewNFC(inNfc)
-	// go nfc.Run(ctx)
 	go func() {
 		fmt.Println("Type whatever you want!")
 
@@ -68,6 +64,9 @@ func (f *Favolotto) Run(ctx context.Context) error {
 	// initialize web server
 	httpServer := NewHTTPServer(f.config.Host, f.config.Port, store)
 	go httpServer.Run(ctx)
+
+	nfc := NewNFC(inNfc)
+	go nfc.Run(ctx)
 
 	<-ctx.Done()
 	return nil

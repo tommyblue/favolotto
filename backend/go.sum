@@ -1,0 +1,8 @@
+github.com/clausecker/nfc/v2 v2.2.0 h1:MM0JUDflK9Z9inzCWT8FlxeRu7EPrBxO39eTjhvWt0U=
+github.com/clausecker/nfc/v2 v2.2.0/go.mod h1:BjRBQUQTQmiwh2tEfQ+xBM5xY05sV2gnZ0JRYEHog/o=
+github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
+github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/warthog618/gpiod v0.8.3 h1:hGFm/zf5PUyXU2LBG4fiZyRnbSSiPEajuOtQzQ3vkLo=
+github.com/warthog618/gpiod v0.8.3/go.mod h1:YHsKSpTHebSDGnKNQKfQp9t/0JxQCyXyYtCF3F+78dc=
+golang.org/x/sys v0.10.0 h1:SqMFp9UcQJZa+pmYuAKjd9xq1f0j5rLcDIk0mj4qAsA=
+golang.org/x/sys v0.10.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
