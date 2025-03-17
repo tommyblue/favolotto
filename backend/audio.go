@@ -8,11 +8,13 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 )
 
 type Audio struct {
 	in        <-chan string
 	ctrl      <-chan string
+	ledColor  chan<- string
 	storePath string
 
 	currentFile string
@@ -26,10 +28,11 @@ var (
 	Stop   = "stop"
 )
 
-func NewAudio(storePath string, in <-chan string, ctrl <-chan string) *Audio {
+func NewAudio(storePath string, in <-chan string, ctrl <-chan string, ledColor chan<- string) *Audio {
 	return &Audio{
 		in:        in,
 		ctrl:      ctrl,
+		ledColor:  ledColor,
 		storePath: storePath,
 	}
 }
@@ -44,8 +47,14 @@ func (a *Audio) Run(ctx context.Context) {
 			return
 		case fname := <-a.in:
 			// if the same file is requested, do nothing
+			// TODO: if the file is the same but the audio is paused, resume it
 			if a.currentFile == fname {
 				log.Println("Same audio file requested")
+				a.ledColor <- "orange"
+				go func() {
+					time.Sleep(2 * time.Second)
+					a.ledColor <- "black"
+				}()
 				break
 			}
 			log.Println("Audio file requested: ", fname)
@@ -53,6 +62,11 @@ func (a *Audio) Run(ctx context.Context) {
 			// check if the file exists
 			if _, err := os.Stat(fname); os.IsNotExist(err) {
 				log.Printf("File %s does not exist", fname)
+				a.ledColor <- "red"
+				go func() {
+					time.Sleep(2 * time.Second)
+					a.ledColor <- "black"
+				}()
 				continue
 			}
 
@@ -60,15 +74,19 @@ func (a *Audio) Run(ctx context.Context) {
 
 			stdin.Write([]byte(fmt.Sprintf("LOAD %s\n", fname)))
 			stdin.Write([]byte("GAIN 100\n"))
+			a.ledColor <- "green"
 		case ctrlCmd := <-a.ctrl:
 			switch ctrlCmd {
 			case Pause:
 				stdin.Write([]byte("PAUSE\n"))
+				a.ledColor <- "blue"
 			case Resume:
 				stdin.Write([]byte("PAUSE\n"))
+				a.ledColor <- "green"
 			case Stop:
 				stdin.Write([]byte("STOP\n"))
 				a.currentFile = ""
+				a.ledColor <- "blue"
 			default:
 				log.Println("Unknown control command:", ctrlCmd)
 			}

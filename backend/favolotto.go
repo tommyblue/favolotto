@@ -27,9 +27,10 @@ func New(config Config) *Favolotto {
 }
 
 func (f *Favolotto) Run(ctx context.Context) error {
-	inNfc := make(chan string)   // channel for NFC tag IDs
-	inFname := make(chan string) // channel for audio files to play
-	ctrl := make(chan string)    // channel for control commands
+	inNfc := make(chan string)    // channel for NFC tag IDs
+	inFname := make(chan string)  // channel for audio files to play
+	ctrl := make(chan string)     // channel for control commands
+	ledColor := make(chan string) // channel for LED color commands
 
 	go func() {
 		fmt.Println("Type whatever you want!")
@@ -57,7 +58,7 @@ func (f *Favolotto) Run(ctx context.Context) error {
 	wg := &sync.WaitGroup{}
 
 	// TODO: Use LEDs to indicate the current state of the audio player
-	led := NewLED()
+	led := NewLED(ledColor)
 
 	wg.Add(1)
 	go func() {
@@ -76,7 +77,7 @@ func (f *Favolotto) Run(ctx context.Context) error {
 		store.Run(ctx)
 	}()
 
-	audio := NewAudio("store", inFname, ctrl)
+	audio := NewAudio("store", inFname, ctrl, ledColor)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
