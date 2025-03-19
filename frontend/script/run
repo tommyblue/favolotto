@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd "$(dirname "$0")/.." || exit 1
+
+# rm -rf node_modules && rm package-lock.json && npm i
+npm run dev -- --host
