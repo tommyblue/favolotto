@@ -10,9 +10,10 @@ import (
 )
 
 type Config struct {
-	Host  string `json:"host"`
-	Port  int    `json:"port"`
-	Store string `json:"store"`
+	Host        string `json:"host"`
+	Port        int    `json:"port"`
+	Store       string `json:"store"`
+	Development bool   `json:"development"`
 }
 
 type Favolotto struct {
@@ -27,6 +28,8 @@ func New(config Config) *Favolotto {
 }
 
 func (f *Favolotto) Run(ctx context.Context) error {
+	ctx = context.WithValue(ctx, "development", f.config.Development)
+
 	inNfc := make(chan string)    // channel for NFC tag IDs
 	inFname := make(chan string)  // channel for audio files to play
 	ctrl := make(chan string)     // channel for control commands

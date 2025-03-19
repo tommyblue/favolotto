@@ -13,12 +13,20 @@ import (
 
 type Button struct {
 	in  chan<- string
-	btn gpio.PinIO
+	btn *gpio.PinIO
 }
 
 func NewButton(in chan<- string) (*Button, error) {
+
+	return &Button{
+		in:  in,
+		btn: nil,
+	}, nil
+}
+
+func (b *Button) init() error {
 	if _, err := host.Init(); err != nil {
-		return nil, fmt.Errorf("error during initialization: %v", err)
+		return fmt.Errorf("error during initialization: %v", err)
 	}
 
 	// Define GPIO17 pin
@@ -26,23 +34,32 @@ func NewButton(in chan<- string) (*Button, error) {
 
 	// configure as input with internal pull-up
 	if err := btn.In(gpio.PullUp, gpio.BothEdges); err != nil {
-		return nil, fmt.Errorf("error configuring GPIO: %v", err)
+		return fmt.Errorf("error configuring GPIO: %v", err)
 	}
 
-	return &Button{
-		in:  in,
-		btn: btn,
-	}, nil
+	b.btn = &btn
+
+	return nil
 }
 
 func (b *Button) Run(ctx context.Context) {
+	isDevelopment := ctx.Value("development").(bool)
+	if isDevelopment {
+		log.Println("Button is disabled in development mode")
+		return
+	}
+
+	if err := b.init(); err != nil {
+		log.Fatalf("error initializing button: %v", err)
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			log.Println("button context done")
 			return
 		default:
-			if b.btn.Read() == gpio.Low {
+			if (*b.btn).Read() == gpio.Low {
 				log.Println("button pressed")
 				b.in <- Pause
 				time.Sleep(200 * time.Millisecond) // Debounce

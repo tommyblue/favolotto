@@ -19,6 +19,12 @@ func NewNFC(in chan<- string) *Nfc {
 }
 
 func (n *Nfc) Run(ctx context.Context) {
+	isDevelopment := ctx.Value("development").(bool)
+	if isDevelopment {
+		log.Println("NFC is disabled in development mode")
+		return
+	}
+
 	// Create an abstraction of the Reader, DeviceConnection string is empty if you want the library to autodetect your reader
 	rfidReader := tagreader.NewTagReader("", 19)
 	tagChannel := rfidReader.GetTagChannel()

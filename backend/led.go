@@ -36,6 +36,12 @@ func NewLED(inCh <-chan string) *LED {
 }
 
 func (l *LED) Run(ctx context.Context) {
+	isDevelopment := ctx.Value("development").(bool)
+	if isDevelopment {
+		log.Println("LED is disabled in development mode")
+		return
+	}
+
 	if _, err := host.Init(); err != nil {
 		log.Fatalf("led init error: %v", err)
 	}

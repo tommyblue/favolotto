@@ -70,6 +70,7 @@ func (s *HTTPServer) apiMux() http.Handler {
 func (s *HTTPServer) listSongs() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			log.Println("listSongs")
 			songs := s.store.getMetadata()
 			// use thing to handle request
 			// logger.Info(r.Context(), "msg", "handleSomething")
@@ -82,6 +83,7 @@ func (s *HTTPServer) listSongs() http.Handler {
 func (s *HTTPServer) putSong() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			log.Println("putSong")
 			r.ParseMultipartForm(150 << 20) // 150 MB
 			file, header, err := r.FormFile("file")
 			if err != nil {
@@ -109,6 +111,7 @@ func (s *HTTPServer) putSong() http.Handler {
 func (s *HTTPServer) deleteSong() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			log.Println("deleteSong")
 			// use thing to handle request
 			// logger.Info(r.Context(), "msg", "handleSomething")
 			type request struct {
