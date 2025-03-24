@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/tommyblue/favolotto/tagreader"
+	tagreader "github.com/tommyblue/favolotto/internal/pn7150"
 )
 
 type Nfc struct {
