@@ -2,7 +2,7 @@
 BINARY=favolotto
 
 # Percorso della cartella dei sorgenti
-SRC_DIR=.
+SRC_DIR=./cmd/favolotto
 
 # Architettura target (può essere cambiata in arm, arm64, etc.)
 GOARCH=arm
@@ -35,7 +35,7 @@ CGO_LDFLAGS=-lnfc_nci_linux -lpthread \
 BUILD_FLAGS=-ldflags="-s -w"
 
 # Directory di output
-BUILD_DIR=build
+BUILD_DIR=bin
 
 all: build
 
