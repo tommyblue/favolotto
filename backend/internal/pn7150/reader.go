@@ -1,23 +1,95 @@
-package tagreader
+package main
+
+/*
+#include "nfc_lib.h"
+#include <stdint.h>
+*/
+import "C"
 
 import (
-	"context"
 	"encoding/hex"
-	"log"
-	"time"
-
-	"github.com/clausecker/nfc/v2"
-	"github.com/pkg/errors"
-	"github.com/warthog618/gpiod"
+	"fmt"
+	"unsafe"
+	"sync"
 )
 
-var modulations = []nfc.Modulation{
-	{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
-	// {Type: nfc.ISO14443b, BaudRate: nfc.Nbr106},
-	// {Type: nfc.Felica, BaudRate: nfc.Nbr212},
-	// {Type: nfc.Felica, BaudRate: nfc.Nbr424},
-	// {Type: nfc.Jewel, BaudRate: nfc.Nbr106},
-	// {Type: nfc.ISO14443biClass, BaudRate: nfc.Nbr106},
+type Tag struct {
+	text string
+	uid string
+	err string
+}
+
+var (
+	tagCh chan Tag
+	tagChRemove chan bool
+	once      sync.Once
+)
+
+
+func initTagCh() {
+	once.Do(func() {
+		tagCh = make(chan Tag)
+		tagChRemove = make(chan bool)
+	})
+}
+
+//export onTagRemove
+func onTagRemove() {
+	initTagCh()
+	tagChRemove <- true
+}
+
+//export exportTag
+func exportTag(p *C.Tag) {
+	initTagCh()
+	uid := C.GoBytes(unsafe.Pointer(&p.uid), p.uid_length)
+	text := C.GoBytes(unsafe.Pointer(&p.text), p.text_length)
+	err := ""
+	switch int(p.error) {
+	case 1:
+		err = "Not a NDEF tag"
+	case 2:
+		err = "Not a NDEF text record"
+	case 3:
+		err = "Read NDEF text error"
+	}
+
+	tagContext := Tag {
+		uid: hex.EncodeToString(uid),
+		text: string(text),
+		err: err,
+	}
+
+	tagCh <- tagContext
+}
+
+func tagPoll(tag_poll chan bool) {
+	C.read_tag()
+	fmt.Println("Tag poll ends")
+	tag_poll <- true
+}
+
+func main() {
+	initTagCh()
+
+	tag_poll := make(chan bool)
+
+	go tagPoll(tag_poll)
+
+	for {
+		select {
+		case msg := <-tagCh:
+			fmt.Println("> Text:", msg.uid)
+			fmt.Println("> UID:", msg.text)
+			fmt.Println("> err:", msg.err)
+		case <-tagChRemove:
+			fmt.Println("> Removed")
+		case <-tag_poll:
+			fmt.Println("Tag polls ends")
+			return
+		}
+	}
+
 }
 
 type Reader interface {
@@ -29,24 +101,12 @@ type Reader interface {
 
 type TagReader struct {
 	TagChannel       chan string
-	reader           *nfc.Device
-	ResetPin         int
-	DeviceConnection string
+  TagChannelPoll   chan bool
 }
 
 func (reader *TagReader) init() error {
-	dev, err := nfc.Open(reader.DeviceConnection)
-	if err != nil {
-		// Reset the reader if there is an error
-		reader.Reset()
-		return errors.Wrap(err, "Cannot communicate with the device")
-	}
+	tag_poll := make(chan bool)
 
-	reader.reader = &dev
-	err = reader.reader.InitiatorInit()
-	if err != nil {
-		return errors.Wrap(err, "Cannot initialize the reader")
-	}
 
 	return nil
 }
@@ -57,37 +117,8 @@ func NewTagReader(deviceConnection string, resetPin int) *TagReader {
 
 // Reset performs a hardware reset by pulling the ResetPin low and then releasing.
 func (reader *TagReader) Reset() {
+  // TODO: needed?
 	log.Println("Resetting the reader..")
-
-	//refer to gpiod docs
-	c, err := gpiod.NewChip("gpiochip0")
-	pin, err := c.RequestLine(reader.ResetPin, gpiod.AsOutput(0))
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	err = pin.SetValue(1)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	time.Sleep(time.Millisecond * 400)
-	err = pin.SetValue(0)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	time.Sleep(time.Millisecond * 400)
-
-	err = pin.SetValue(1)
-	time.Sleep(time.Millisecond * 100)
-	if err != nil {
-		log.Println(err)
-		return
-	}
 }
 
 func (reader *TagReader) Cleanup() error {
@@ -107,37 +138,6 @@ func (reader *TagReader) getIdFromTarget(target nfc.Target) (*string, error) {
 		var UIDLen = card.UIDLen
 		var ID = card.UID
 		UID = hex.EncodeToString(ID[:UIDLen])
-		// break
-	// case nfc.Modulation{Type: nfc.ISO14443b, BaudRate: nfc.Nbr106}:
-	// 	var card = target.(*nfc.ISO14443bTarget)
-	// 	var UIDLen = len(card.ApplicationData)
-	// 	var ID = card.ApplicationData
-	// 	UID = hex.EncodeToString(ID[:UIDLen])
-	// 	break
-	// case nfc.Modulation{Type: nfc.Felica, BaudRate: nfc.Nbr212}:
-	// 	var card = target.(*nfc.FelicaTarget)
-	// 	var UIDLen = card.Len
-	// 	var ID = card.ID
-	// 	UID = hex.EncodeToString(ID[:UIDLen])
-	// 	break
-	// case nfc.Modulation{Type: nfc.Felica, BaudRate: nfc.Nbr424}:
-	// 	var card = target.(*nfc.FelicaTarget)
-	// 	var UIDLen = card.Len
-	// 	var ID = card.ID
-	// 	UID = hex.EncodeToString(ID[:UIDLen])
-	// 	break
-	// case nfc.Modulation{Type: nfc.Jewel, BaudRate: nfc.Nbr106}:
-	// 	var card = target.(*nfc.JewelTarget)
-	// 	var ID = card.ID
-	// 	var UIDLen = len(ID)
-	// 	UID = hex.EncodeToString(ID[:UIDLen])
-	// 	break
-	// case nfc.Modulation{Type: nfc.ISO14443biClass, BaudRate: nfc.Nbr106}:
-	// 	var card = target.(*nfc.ISO14443biClassTarget)
-	// 	var ID = card.UID
-	// 	var UIDLen = len(ID)
-	// 	UID = hex.EncodeToString(ID[:UIDLen])
-	// 	break
 	default:
 		return nil, errors.New("Unknown modulation")
 	}
