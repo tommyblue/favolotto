@@ -135,7 +135,6 @@ func (a *Audio) cleanup() {
 }
 
 func (a *Audio) setup() io.WriteCloser {
-
 	a.currentCmd = exec.Command(a.cmd, "-R", "control")
 	stdin, err := a.currentCmd.StdinPipe()
 	if err != nil {
