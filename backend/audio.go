@@ -130,7 +130,7 @@ func (a *Audio) setup() io.WriteCloser {
 	}
 
 	if err := a.currentCmd.Start(); err != nil {
-		log.Println("error starting mpg321:", err)
+		log.Println("error starting mpg123:", err)
 		return nil
 	}
 
