@@ -7,28 +7,27 @@ package pn7150
 import "C"
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
-	"unsafe"
 	"sync"
-	"context"
 	"time"
+	"unsafe"
 
 	"github.com/pkg/errors"
 )
 
 type Tag struct {
 	text string
-	uid string
-	err string
+	uid  string
+	err  string
 }
 
 var (
-	tagCh chan Tag
+	tagCh       chan Tag
 	tagChRemove chan bool
-	once      sync.Once
+	once        sync.Once
 )
-
 
 func initTagCh() {
 	once.Do(func() {
@@ -58,10 +57,10 @@ func exportTag(p *C.Tag) {
 		err = "Read NDEF text error"
 	}
 
-	tagContext := Tag {
-		uid: hex.EncodeToString(uid),
+	tagContext := Tag{
+		uid:  hex.EncodeToString(uid),
 		text: string(text),
-		err: err,
+		err:  err,
 	}
 
 	tagCh <- tagContext
@@ -97,22 +96,22 @@ func tmp_main() {
 }
 
 type TagReader struct {
-	TagChannel       chan string
-  TagChannelPoll   chan bool
+	tagChannel     chan string
+	tagChannelPoll chan bool
 }
 
 func (reader *TagReader) init() error {
 	initTagCh()
-	go tagPoll(reader.TagChannelPoll)
+	go tagPoll(reader.tagChannelPoll)
 
 	return nil
 }
 
-func New() *TagReader {
-  return &TagReader{
-    TagChannel: make(chan string, 10),
-    TagChannelPoll: make(chan bool),
-  }
+func New() (*TagReader, error) {
+	return &TagReader{
+		tagChannel:     make(chan string, 10),
+		tagChannelPoll: make(chan bool),
+	}, nil
 }
 
 func (reader *TagReader) Stop() error {
@@ -120,28 +119,27 @@ func (reader *TagReader) Stop() error {
 }
 
 func (reader *TagReader) Read() <-chan string {
-	return reader.TagChannel
+	return reader.tagChannel
 }
 
 func (reader *TagReader) Run(ctx context.Context) error {
-  //Initialize the reader
-  err := reader.init()
-  if err != nil {
-    return errors.Wrap(err, "Cannot initialize the reader")
-  }
+	//Initialize the reader
+	err := reader.init()
+	if err != nil {
+		return errors.Wrap(err, "Cannot initialize the reader")
+	}
 
-  for {
-    select {
-    case <-ctx.Done():
-      return nil
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
 		case msg := <-tagCh:
 			fmt.Println("> Text:", msg.uid)
 			fmt.Println("> UID:", msg.text)
 			fmt.Println("> err:", msg.err)
 
-      reader.TagChannel <- msg.text
-    }
-    time.Sleep(time.Second * 1)
-  }
+			reader.tagChannel <- msg.text
+		}
+		time.Sleep(time.Second * 1)
+	}
 }
-
