@@ -1,4 +1,4 @@
-package tagreader
+package pn532
 
 import (
 	"context"
@@ -55,11 +55,7 @@ func NewTagReader(deviceConnection string, resetPin int) *TagReader {
 	return &TagReader{DeviceConnection: deviceConnection, TagChannel: make(chan string, 10), ResetPin: resetPin}
 }
 
-// Reset performs a hardware reset by pulling the ResetPin low and then releasing.
-func (reader *TagReader) Reset() {
-}
-
-func (reader *TagReader) Cleanup() error {
+func (reader *TagReader) Stop() error {
 	return reader.reader.Close()
 }
 
