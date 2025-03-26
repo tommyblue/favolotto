@@ -99,7 +99,7 @@ func (f *Favolotto) Run(ctx context.Context) error {
 		httpServer.Run(ctx)
 	}()
 
-	nfc := NewNFC(inNfc)
+	nfc := NewNFC("", inNfc)
 
 	wg.Add(1)
 	go func() {

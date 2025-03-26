@@ -12,7 +12,6 @@ import (
 	"unsafe"
 	"sync"
 	"context"
-	"log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -97,13 +96,6 @@ func tmp_main() {
 
 }
 
-type Reader interface {
-	ListenForTags(ctx context.Context) error
-	Cleanup() error
-	Reset()
-	GetTagChannel() <-chan string
-}
-
 type TagReader struct {
 	TagChannel       chan string
   TagChannelPoll   chan bool
@@ -116,28 +108,22 @@ func (reader *TagReader) init() error {
 	return nil
 }
 
-func NewTagReader(deviceConnection string, resetPin int) *TagReader {
+func New() *TagReader {
   return &TagReader{
     TagChannel: make(chan string, 10),
     TagChannelPoll: make(chan bool),
   }
 }
 
-// Reset performs a hardware reset by pulling the ResetPin low and then releasing.
-func (reader *TagReader) Reset() {
-  // TODO: needed?
-	log.Println("Resetting the reader..")
-}
-
-func (reader *TagReader) Cleanup() error {
+func (reader *TagReader) Stop() error {
 	return nil
 }
 
-func (reader *TagReader) GetTagChannel() <-chan string {
+func (reader *TagReader) Read() <-chan string {
 	return reader.TagChannel
 }
 
-func (reader *TagReader) ListenForTags(ctx context.Context) error {
+func (reader *TagReader) Run(ctx context.Context) error {
   //Initialize the reader
   err := reader.init()
   if err != nil {
