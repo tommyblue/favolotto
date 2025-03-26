@@ -22,11 +22,17 @@ type Nfc struct {
 
 func NewNFC(driverName string, in chan<- string) *Nfc {
 	var driver NfcDriver
+	var err error
 	switch driverName {
 	case "pn7150":
-		driver = pn7150.New()
+		driver, err = pn7150.New()
 	case "pn532":
-		driver = pn532.New()
+		driver, err = pn532.New()
+	}
+
+	if err != nil {
+		log.Printf("Error while init nfc device\n", err)
+		return nil
 	}
 
 	return &Nfc{
