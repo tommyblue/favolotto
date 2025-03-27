@@ -10,7 +10,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="nfcTag" class="block text-sm font-medium text-gray-700 mb-1">NFC Tag</label>
-          <input v-model="nfcTag" type="text" id="nfcTag" placeholder="Inserisci NFC Tag"
+          <input v-model="nfcTag" type="text" id="nfcTag" placeholder="Inserisci NFC Tag" value="{{ currentTag }}"
             class="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
         </div>
 
@@ -108,6 +108,7 @@
 import { Dialog, DialogDescription, DialogPanel, DialogTitle, TransitionRoot } from '@headlessui/vue';
 import axios from 'axios';
 import { onMounted, ref } from 'vue';
+import { usePolling } from "@/composables/usePolling";
 
 export default {
   components: {
@@ -125,6 +126,14 @@ export default {
     const alertOpen = ref(false);
     const currentSongToDelete = ref(null);
     const currentTagToDelete = ref(null);
+
+    const fetchData = async () => {
+      const response = await fetch("/api/v1/tags/current");
+      const data = response.json();
+      return data.tag;
+    };
+
+    const { currentTag } = usePolling(fetchData, 1000);
 
     const fetchSongs = async () => {
       try {
@@ -190,6 +199,7 @@ export default {
     onMounted(fetchSongs);
 
     return {
+      currentTag,
       songs,
       nfcTag,
       songFile,
