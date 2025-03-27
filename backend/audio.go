@@ -103,7 +103,7 @@ func (a *Audio) cleanup() {
 }
 
 func (a *Audio) setup() io.WriteCloser {
-	a.currentCmd = exec.Command("mpg321", "-R", "control")
+	a.currentCmd = exec.Command("mpg123", "-R", "control")
 	stdin, err := a.currentCmd.StdinPipe()
 	if err != nil {
 		log.Println("error opening stdin:", err)
@@ -116,7 +116,7 @@ func (a *Audio) setup() io.WriteCloser {
 	}
 
 	if err := a.currentCmd.Start(); err != nil {
-		log.Println("error starting mpg321:", err)
+		log.Println("error starting mpg123:", err)
 		return nil
 	}
 
