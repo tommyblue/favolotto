@@ -10,7 +10,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="nfcTag" class="block text-sm font-medium text-gray-700 mb-1">NFC Tag</label>
-          <input v-model="nfcTag" type="text" id="nfcTag" placeholder="Inserisci NFC Tag" value="{{ currentTag }}"
+          <input v-model="nfcTag" type="text" id="nfcTag" placeholder="Inserisci NFC Tag"
             class="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
         </div>
 
@@ -25,6 +25,8 @@
         class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-md mt-6 hover:bg-indigo-700 transition">
         Upload Song
       </button>
+
+      <h4 class="text-xl mt-8 font-semibold text-indigo-300">Last read tag: {{ currentTag }}</h4>
     </div>
 
     <div class="mt-12 w-full max-w-lg md:max-w-2xl lg:max-w-4xl">
@@ -105,10 +107,10 @@
 </template>
 
 <script>
+import { usePolling } from "@/composables/usePolling";
 import { Dialog, DialogDescription, DialogPanel, DialogTitle, TransitionRoot } from '@headlessui/vue';
 import axios from 'axios';
 import { onMounted, ref } from 'vue';
-import { usePolling } from "@/composables/usePolling";
 
 export default {
   components: {
@@ -126,15 +128,17 @@ export default {
     const alertOpen = ref(false);
     const currentSongToDelete = ref(null);
     const currentTagToDelete = ref(null);
+    const currentTag = ref('');
 
     const fetchData = async () => {
       const response = await fetch("/api/v1/tags/current");
-      const data = response.json();
-      return data.tag;
+      const data = await response.json();
+      currentTag.value = data.nfc_tag;
     };
 
-    const { currentTag } = usePolling(fetchData, 1000);
+    usePolling(fetchData, 5000);
 
+    console.log("currentTag", currentTag);
     const fetchSongs = async () => {
       try {
         const response = await axios.get('/api/v1/songs');

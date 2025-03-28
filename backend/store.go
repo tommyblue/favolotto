@@ -17,6 +17,7 @@ type Store struct {
 	inFname   chan<- string
 	storePath string
 	data      []Metadata
+	lastNfc   string
 
 	mu sync.Mutex
 }
@@ -51,6 +52,7 @@ func (s *Store) Run(ctx context.Context) {
 			log.Printf("store context done")
 			return
 		case nfc := <-s.inNfc:
+			s.lastNfc = nfc
 			for _, m := range s.data {
 				if m.NfcTag == nfc {
 					log.Printf("NFC tag %s found, playing %s", nfc, m.Name)
@@ -60,6 +62,10 @@ func (s *Store) Run(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func (s *Store) LastNfc() string {
+	return s.lastNfc
 }
 
 func (s *Store) putSong(nfcTag, fname string, file multipart.File) error {

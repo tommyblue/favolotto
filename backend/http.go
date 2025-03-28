@@ -62,6 +62,7 @@ func (s *HTTPServer) Run(ctx context.Context) {
 func (s *HTTPServer) apiMux() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("GET /songs", s.listSongs())
+	mux.Handle("GET /tags/current", s.currentTag())
 	mux.Handle("PUT /song", s.putSong())
 	mux.Handle("DELETE /song", s.deleteSong())
 	return http.StripPrefix("/api/v1", mux)
@@ -70,7 +71,6 @@ func (s *HTTPServer) apiMux() http.Handler {
 func (s *HTTPServer) listSongs() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			log.Println("listSongs")
 			songs := s.store.getMetadata()
 			// use thing to handle request
 			// logger.Info(r.Context(), "msg", "handleSomething")
@@ -80,12 +80,28 @@ func (s *HTTPServer) listSongs() http.Handler {
 	)
 }
 
+func (s *HTTPServer) currentTag() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			nfc := s.store.LastNfc()
+			resp := struct {
+				NfcTag string `json:"nfc_tag"`
+			}{
+				NfcTag: nfc,
+			}
+			// use thing to handle request
+			// logger.Info(r.Context(), "msg", "handleSomething")
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+		},
+	)
+}
+
 func (s *HTTPServer) putSong() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			log.Println("putSong")
 			r.ParseMultipartForm(150 << 20) // 150 MB
-			file, header, err := r.FormFile("file")
+			file, header, err := r.FormFile("song")
 			if err != nil {
 				http.Error(w, "Error uploading file", http.StatusBadRequest)
 				return
@@ -111,7 +127,6 @@ func (s *HTTPServer) putSong() http.Handler {
 func (s *HTTPServer) deleteSong() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			log.Println("deleteSong")
 			// use thing to handle request
 			// logger.Info(r.Context(), "msg", "handleSomething")
 			type request struct {
