@@ -17,6 +17,7 @@ type Audio struct {
 	ledColor  chan<- string
 	storePath string
 
+	cmd         string
 	currentFile string
 	currentCmd  *exec.Cmd
 }
@@ -28,13 +29,25 @@ var (
 	Stop   = "stop"
 )
 
-func NewAudio(storePath string, in <-chan string, ctrl <-chan string, ledColor chan<- string) *Audio {
+func NewAudio(storePath string, in <-chan string, ctrl <-chan string, ledColor chan<- string) (*Audio, error) {
+	cmd := "mpg321"
+	_, err := exec.LookPath(cmd)
+	if err != nil {
+		log.Println("mpg321 not found, trying mpg123")
+		cmd = "mpg123"
+		_, err = exec.LookPath(cmd)
+		if err != nil {
+			return nil, fmt.Errorf("neither mpg321 nor mpg123 found")
+		}
+	}
+
 	return &Audio{
 		in:        in,
 		ctrl:      ctrl,
 		ledColor:  ledColor,
 		storePath: storePath,
-	}
+		cmd:       cmd,
+	}, nil
 }
 
 func (a *Audio) Run(ctx context.Context) {
@@ -103,7 +116,8 @@ func (a *Audio) cleanup() {
 }
 
 func (a *Audio) setup() io.WriteCloser {
-	a.currentCmd = exec.Command("mpg321", "-R", "control")
+
+	a.currentCmd = exec.Command(a.cmd, "-R", "control")
 	stdin, err := a.currentCmd.StdinPipe()
 	if err != nil {
 		log.Println("error opening stdin:", err)

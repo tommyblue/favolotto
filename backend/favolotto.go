@@ -80,7 +80,10 @@ func (f *Favolotto) Run(ctx context.Context) error {
 		store.Run(ctx)
 	}()
 
-	audio := NewAudio("store", inFname, ctrl, ledColor)
+	audio, err := NewAudio("store", inFname, ctrl, ledColor)
+	if err != nil {
+		log.Fatal("Error creating audio: ", err.Error())
+	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
