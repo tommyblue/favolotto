@@ -1,3 +1,5 @@
+//go:build pn7150
+
 package pn7150
 
 /*

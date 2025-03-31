@@ -1,3 +1,5 @@
+//go:build pn7150
+
 #ifndef NCF_LIB_H
 #define NCF_LIB_H
 

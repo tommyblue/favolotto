@@ -1,3 +1,5 @@
+//go:build pn532
+
 package pn532
 
 import (

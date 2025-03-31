@@ -29,6 +29,9 @@ CGO_LDFLAGS=-lnfc_nci_linux -lpthread \
 # Compilation flags
 BUILD_FLAGS=-ldflags="-s -w"
 
+# Build tags
+BUILD_TAGS=--tags "pn532 pn7150"
+
 # Output folder
 BUILD_DIR=bin
 
@@ -42,7 +45,7 @@ build: ## Build the app with correct environment for the rpi
 	GOOS=$(TARGET_OS) GOARCH=$(GOARCH) GOARM=$(GOARM) \
 	CGO_ENABLED=$(CGO_ENABLED) CC=$(CC) \
 	CGO_CFLAGS="$(CGO_CFLAGS)" CGO_LDFLAGS="$(CGO_LDFLAGS)" \
-	go build $(BUILD_FLAGS) -o $(BUILD_DIR)/$(BINARY) $(SRC_DIR)
+	go build $(BUILD_FLAGS) $(BUILD_TAGS) -o $(BUILD_DIR)/$(BINARY) $(SRC_DIR)
 
 clean: ## Clean the build directory
 	rm -rf $(BUILD_DIR)
