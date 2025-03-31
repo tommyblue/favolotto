@@ -127,7 +127,7 @@ device.connstring = "pn532_i2c:/dev/i2c-1"
 Install the required packages:
 
 ```sh
-sudo apt install libnfc6 libnfc-bin libnfc-examples
+sudo apt install libnfc6 libnfc-bin libnfc-dev libnfc-examples
 ```
 
 Check the device:
