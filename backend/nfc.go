@@ -2,20 +2,47 @@ package favolotto
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
-	"github.com/tommyblue/favolotto/tagreader"
+	"github.com/tommyblue/favolotto/internal/pn532"
+	"github.com/tommyblue/favolotto/internal/pn7150"
 )
 
-type Nfc struct {
-	in chan<- string
+type NfcDriver interface {
+	Run(ctx context.Context) error
+	Stop() error
+	Read() <-chan string
 }
 
-func NewNFC(in chan<- string) *Nfc {
-	return &Nfc{
-		in: in,
+type Nfc struct {
+	driver NfcDriver
+	in     chan<- string
+}
+
+func NewNFC(driverName string, in chan<- string) (*Nfc, error) {
+	var driver NfcDriver
+	var err error
+	switch driverName {
+	case "pn7150":
+		driver, err = pn7150.New()
+	case "pn532":
+		driver, err = pn532.New()
+	default:
+		log.Printf("Unknown NFC driver: %s\n", driverName)
+		return nil, fmt.Errorf("unknown NFC driver: %s", driverName)
 	}
+
+	if err != nil {
+		log.Printf("Error while init nfc device\n", err)
+		return nil, err
+	}
+
+	return &Nfc{
+		in:     in,
+		driver: driver,
+	}, nil
 }
 
 func (n *Nfc) Run(ctx context.Context) {
@@ -24,21 +51,16 @@ func (n *Nfc) Run(ctx context.Context) {
 		log.Println("NFC is disabled in development mode")
 		return
 	}
-
-	// Create an abstraction of the Reader, DeviceConnection string is empty if you want the library to autodetect your reader
-	rfidReader := tagreader.NewTagReader("", 19)
-	tagChannel := rfidReader.GetTagChannel()
-
 	// Listen for an RFID/NFC tag in a separate goroutine
-	go rfidReader.ListenForTags(ctx)
+	go n.driver.Run(ctx)
 
 	for {
 		select {
-		case tagId := <-tagChannel:
+		case tagId := <-n.driver.Read():
 			log.Printf("Read tag: %s \n", tagId)
 			n.in <- tagId
 		case <-ctx.Done():
-			err := rfidReader.Cleanup()
+			err := n.driver.Stop()
 			if err != nil {
 				log.Fatal("Error cleaning up the reader: ", err.Error())
 			}

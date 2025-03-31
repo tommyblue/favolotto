@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/tommyblue/favolotto/tagreader"
+	"github.com/tommyblue/favolotto/internal/pn7150"
 )
 
 func main() {

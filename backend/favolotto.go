@@ -14,6 +14,7 @@ type Config struct {
 	Port        int    `json:"port"`
 	Store       string `json:"store"`
 	Development bool   `json:"development"`
+	NfcDriver   string `json:"nfc_driver"`
 }
 
 type Favolotto struct {
@@ -99,7 +100,10 @@ func (f *Favolotto) Run(ctx context.Context) error {
 		httpServer.Run(ctx)
 	}()
 
-	nfc := NewNFC(inNfc)
+	nfc, err := NewNFC(f.config.NfcDriver, inNfc)
+	if err != nil {
+		log.Fatal("Error creating NFC: ", err.Error())
+	}
 
 	wg.Add(1)
 	go func() {
