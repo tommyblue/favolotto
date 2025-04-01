@@ -36,28 +36,25 @@ func (f *Favolotto) Run(ctx context.Context) error {
 	ctrl := make(chan string)     // channel for control commands
 	ledColor := make(chan string) // channel for LED color commands
 
-	go func() {
-		fmt.Println("Type whatever you want!")
+	if f.config.Development {
+		go func() {
+			fmt.Println("Control mode: type 'p' to pause, 'r' to resume, 's' to stop")
 
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			fmt.Printf("You typed: %s\n", scanner.Text())
-			switch scanner.Text() {
-			case "1":
-				inNfc <- "1234"
-			case "2":
-				inNfc <- "5678"
-			case "p":
-				ctrl <- Pause
-			case "r":
-				ctrl <- Resume
-			case "s":
-				ctrl <- Stop
-			default:
-				fmt.Println("Unknown command")
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				switch scanner.Text() {
+				case "p":
+					ctrl <- Pause
+				case "r":
+					ctrl <- Resume
+				case "s":
+					ctrl <- Stop
+				default:
+					fmt.Println("Unknown command")
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	wg := &sync.WaitGroup{}
 
