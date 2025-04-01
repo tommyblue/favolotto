@@ -33,27 +33,6 @@ var (
 	black  = []byte{0xE0 | 31, 0, 0, 0}
 )
 
-func (c Color) String() string {
-	switch c {
-	case Red:
-		return "Red"
-	case Green:
-		return "Green"
-	case Blue:
-		return "Blue"
-	case Brown:
-		return "Brown"
-	case Violet:
-		return "Violet"
-	case White:
-		return "White"
-	case Black:
-		return "Black"
-	default:
-		return "Unknown"
-	}
-}
-
 func (c Color) Bytes() []byte {
 	if color, ok := Colors[c]; ok {
 		return color

@@ -1,0 +1,51 @@
+name: backend
+on:
+  push:
+defaults:
+  run:
+    working-directory: backend/
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.0"
+          check-latest: true
+          cache: true
+          cache-dependency-path: |
+            **/go.mod
+            **/go.sum
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies
+        run: go get ./...
+
+      - name: Install tools
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/tools/cmd/deadcode@latest
+          go install gotest.tools/gotestsum@latest
+
+      - name: Linting
+        run: |
+            staticcheck -f stylish ./...
+            govulncheck ./...
+            deadcode -test ./... | tee deadcode.out && [ ! -s deadcode.out ]
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Testing
+        run: gotestsum --format testname -- -shuffle=on -race -v -count=1 ./...

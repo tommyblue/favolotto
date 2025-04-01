@@ -24,7 +24,7 @@ func NewLED(inCh <-chan colors.Color) *LED {
 }
 
 func (l *LED) Run(ctx context.Context) {
-	isDevelopment := ctx.Value("development").(bool)
+	isDevelopment := ctx.Value(CtxDevelopment).(bool)
 	if isDevelopment {
 		log.Println("LED is disabled in development mode")
 		return

@@ -30,8 +30,14 @@ func New(config Config) *Favolotto {
 
 }
 
+type CtxKey string
+
+var (
+	CtxDevelopment CtxKey = "development"
+)
+
 func (f *Favolotto) Run(ctx context.Context) error {
-	ctx = context.WithValue(ctx, "development", f.config.Development)
+	ctx = context.WithValue(ctx, CtxDevelopment, f.config.Development)
 
 	inNfc := make(chan string)          // channel for NFC tag IDs
 	inFname := make(chan string)        // channel for audio files to play

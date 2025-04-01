@@ -46,7 +46,7 @@ func NewNFC(driverName string, in chan<- string) (*Nfc, error) {
 }
 
 func (n *Nfc) Run(ctx context.Context) {
-	isDevelopment := ctx.Value("development").(bool)
+	isDevelopment := ctx.Value(CtxDevelopment).(bool)
 	if isDevelopment {
 		log.Println("NFC is disabled in development mode")
 		return

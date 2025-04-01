@@ -142,17 +142,17 @@ func (s *Store) storeMetadata(data []Metadata) error {
 	s.mu.Lock()
 	f, err := os.CreateTemp(os.TempDir(), "metadata.json")
 	if err != nil {
-		log.Printf("error creating metadata file: %w", err)
+		log.Printf("error creating metadata file: %v", err)
 		return fmt.Errorf("error creating metadata file: %w", err)
 	}
 
 	if err := json.NewEncoder(f).Encode(data); err != nil {
-		log.Printf("error encoding metadata file: %w", err)
+		log.Printf("error encoding metadata file: %v", err)
 		return fmt.Errorf("error encoding metadata file: %w", err)
 	}
 	f.Close()
 	if err := os.Rename(f.Name(), filepath.Join(s.storePath, "metadata.json")); err != nil {
-		log.Printf("error renaming metadata file: %w", err)
+		log.Printf("error renaming metadata file: %v", err)
 		return fmt.Errorf("error renaming metadata file: %w", err)
 	}
 	s.mu.Unlock()

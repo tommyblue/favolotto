@@ -43,7 +43,7 @@ func (b *Button) init() error {
 }
 
 func (b *Button) Run(ctx context.Context) {
-	isDevelopment := ctx.Value("development").(bool)
+	isDevelopment := ctx.Value(CtxDevelopment).(bool)
 	if isDevelopment {
 		log.Println("Button is disabled in development mode")
 		return
