@@ -35,7 +35,7 @@ func NewNFC(driverName string, in chan<- string) (*Nfc, error) {
 	}
 
 	if err != nil {
-		log.Printf("Error while init nfc device\n", err)
+		log.Println("Error while init nfc device\n", err)
 		return nil, err
 	}
 
