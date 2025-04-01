@@ -4,31 +4,19 @@ import (
 	"context"
 	"log"
 
+	"github.com/tommyblue/favolotto/internal/colors"
 	"periph.io/x/conn/v3/physic"
 	"periph.io/x/conn/v3/spi"
 	"periph.io/x/host/v3"
 	"periph.io/x/host/v3/sysfs"
 )
 
-var (
-	// red
-	red = []byte{0xE0 | 20, 255, 0, 0}
-	// green
-	green = []byte{0xE0 | 20, 0, 255, 0}
-	// blue
-	blue = []byte{0xE0 | 20, 0, 0, 255}
-	//orange
-	orange = []byte{0xE0 | 20, 255, 172, 28}
-	// black
-	black = []byte{0xE0 | 31, 0, 0, 0}
-)
-
 type LED struct {
 	conn spi.Conn
-	ch   <-chan string
+	ch   <-chan colors.Color
 }
 
-func NewLED(inCh <-chan string) *LED {
+func NewLED(inCh <-chan colors.Color) *LED {
 	return &LED{
 		conn: nil,
 		ch:   inCh,
@@ -60,17 +48,11 @@ func (l *LED) Run(ctx context.Context) {
 
 	l.conn = conn
 
-	// colors := [][]byte{
-	// 	l.makeAPA102Data(255, 0, 0), // LED 1 - Red
-	// 	l.makeAPA102Data(0, 255, 0), // LED 2 - Green
-	// 	l.makeAPA102Data(0, 0, 255), // LED 3 - Blue
-	// }
-
 	for {
 		select {
 		case <-ctx.Done():
 			log.Println("LED context done")
-			l.setColor("black")
+			l.setColor(colors.Black)
 			return
 		case color := <-l.ch:
 			l.setColor(color)
@@ -83,28 +65,9 @@ func (l *LED) Run(ctx context.Context) {
 	}
 }
 
-func (l *LED) setColor(color string) {
-	var colors [][]byte
-	switch color {
-	case "red":
-		colors = [][]byte{red, red, red}
-	case "green":
-		colors = [][]byte{green, green, green}
-	case "blue":
-		colors = [][]byte{blue, blue, blue}
-	case "orange":
-		colors = [][]byte{orange, orange, orange}
-	default:
-		colors = [][]byte{black, black, black}
-	}
-	l.updateLEDs(colors)
+func (l *LED) setColor(color colors.Color) {
+	l.updateLEDs(color.ToLeds())
 }
-
-// Convert RGB to APA102
-// func (l *LED) makeAPA102Data(r, g, b byte) []byte {
-// 	const brightness byte = 0xE0 | 31  // set brightness (0-31)
-// 	return []byte{brightness, b, g, r} // Format: [Brightness, Blue, Green, Red]
-// }
 
 func (l *LED) updateLEDs(colors [][]byte) {
 	startFrame := []byte{0x00, 0x00, 0x00, 0x00}

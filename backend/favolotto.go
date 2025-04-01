@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"sync"
+
+	"github.com/tommyblue/favolotto/internal/colors"
 )
 
 type Config struct {
@@ -31,10 +33,10 @@ func New(config Config) *Favolotto {
 func (f *Favolotto) Run(ctx context.Context) error {
 	ctx = context.WithValue(ctx, "development", f.config.Development)
 
-	inNfc := make(chan string)    // channel for NFC tag IDs
-	inFname := make(chan string)  // channel for audio files to play
-	ctrl := make(chan string)     // channel for control commands
-	ledColor := make(chan string) // channel for LED color commands
+	inNfc := make(chan string)          // channel for NFC tag IDs
+	inFname := make(chan string)        // channel for audio files to play
+	ctrl := make(chan string)           // channel for control commands
+	ledColor := make(chan colors.Color) // channel for LED color commands
 
 	if f.config.Development {
 		go func() {
@@ -42,7 +44,24 @@ func (f *Favolotto) Run(ctx context.Context) error {
 
 			scanner := bufio.NewScanner(os.Stdin)
 			for scanner.Scan() {
-				switch scanner.Text() {
+				s := scanner.Text()
+				fmt.Printf("You typed: %s\n", s)
+
+				switch s {
+				case "1":
+					ledColor <- colors.Red
+				case "2":
+					ledColor <- colors.Green
+				case "3":
+					ledColor <- colors.Blue
+				case "4":
+					ledColor <- colors.Brown
+				case "5":
+					ledColor <- colors.White
+				case "6":
+					ledColor <- colors.Violet
+				case "7":
+					ledColor <- colors.Black
 				case "p":
 					ctrl <- Pause
 				case "r":

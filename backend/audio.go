@@ -9,12 +9,14 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/tommyblue/favolotto/internal/colors"
 )
 
 type Audio struct {
 	in        <-chan string
 	ctrl      <-chan string
-	ledColor  chan<- string
+	ledColor  chan<- colors.Color
 	storePath string
 
 	cmd         string
@@ -29,7 +31,7 @@ var (
 	Stop   = "stop"
 )
 
-func NewAudio(storePath string, in <-chan string, ctrl <-chan string, ledColor chan<- string) (*Audio, error) {
+func NewAudio(storePath string, in <-chan string, ctrl <-chan string, ledColor chan<- colors.Color) (*Audio, error) {
 	cmd := "mpg321"
 	_, err := exec.LookPath(cmd)
 	if err != nil {
@@ -63,11 +65,11 @@ func (a *Audio) Run(ctx context.Context) {
 			// TODO: if the file is the same but the audio is paused, resume it
 			if a.currentFile == fname {
 				log.Println("Same audio file requested")
-				a.ledColor <- "orange"
-				go func() {
-					time.Sleep(2 * time.Second)
-					a.ledColor <- "black"
-				}()
+				// a.ledColor <- "orange"
+				// go func() {
+				// 	time.Sleep(2 * time.Second)
+				// 	a.ledColor <- "black"
+				// }()
 				break
 			}
 			log.Println("Audio file requested: ", fname)
@@ -75,10 +77,10 @@ func (a *Audio) Run(ctx context.Context) {
 			// check if the file exists
 			if _, err := os.Stat(fname); os.IsNotExist(err) {
 				log.Printf("File %s does not exist", fname)
-				a.ledColor <- "red"
+				a.ledColor <- colors.Red
 				go func() {
 					time.Sleep(2 * time.Second)
-					a.ledColor <- "black"
+					a.ledColor <- colors.Black
 				}()
 				continue
 			}
@@ -87,19 +89,19 @@ func (a *Audio) Run(ctx context.Context) {
 
 			stdin.Write([]byte(fmt.Sprintf("LOAD %s\n", fname)))
 			stdin.Write([]byte("GAIN 100\n"))
-			a.ledColor <- "green"
+			a.ledColor <- colors.Green
 		case ctrlCmd := <-a.ctrl:
 			switch ctrlCmd {
 			case Pause:
 				stdin.Write([]byte("PAUSE\n"))
-				a.ledColor <- "blue"
+				a.ledColor <- colors.Blue
 			case Resume:
 				stdin.Write([]byte("PAUSE\n"))
-				a.ledColor <- "green"
+				a.ledColor <- colors.Green
 			case Stop:
 				stdin.Write([]byte("STOP\n"))
 				a.currentFile = ""
-				a.ledColor <- "blue"
+				a.ledColor <- colors.Blue
 			default:
 				log.Println("Unknown control command:", ctrlCmd)
 			}
