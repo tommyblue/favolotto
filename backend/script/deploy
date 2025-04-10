@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd "$(dirname "$0")/.." || exit 1
+
+go build ./cmd/favolotto/
+sudo mv favolotto /usr/local/bin/favolotto
+sudo systemctl restart favolotto

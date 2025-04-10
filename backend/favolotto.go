@@ -83,7 +83,6 @@ func (f *Favolotto) Run(ctx context.Context) error {
 
 	wg := &sync.WaitGroup{}
 
-	// TODO: Use LEDs to indicate the current state of the audio player
 	led := NewLED(ledColor)
 
 	wg.Add(1)

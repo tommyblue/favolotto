@@ -22,6 +22,7 @@ type Audio struct {
 	cmd         string
 	currentFile string
 	currentCmd  *exec.Cmd
+	volume      int
 }
 
 // List of the possible control commands
@@ -29,7 +30,10 @@ var (
 	Pause  = "pause"
 	Resume = "resume"
 	Stop   = "stop"
+	Volume = "volume"
 )
+
+var volumes = []int{20, 60, 100}
 
 func NewAudio(storePath string, in <-chan string, ctrl <-chan string, ledColor chan<- colors.Color) (*Audio, error) {
 	cmd := "mpg321"
@@ -49,6 +53,7 @@ func NewAudio(storePath string, in <-chan string, ctrl <-chan string, ledColor c
 		ledColor:  ledColor,
 		storePath: storePath,
 		cmd:       cmd,
+		volume:    100,
 	}, nil
 }
 
@@ -88,7 +93,7 @@ func (a *Audio) Run(ctx context.Context) {
 			a.currentFile = fname
 
 			stdin.Write([]byte(fmt.Sprintf("LOAD %s\n", fname)))
-			stdin.Write([]byte("GAIN 100\n"))
+			stdin.Write([]byte(fmt.Sprintf("GAIN %d\n", a.volume)))
 			a.ledColor <- colors.Green
 		case ctrlCmd := <-a.ctrl:
 			switch ctrlCmd {
@@ -102,6 +107,17 @@ func (a *Audio) Run(ctx context.Context) {
 				stdin.Write([]byte("STOP\n"))
 				a.currentFile = ""
 				a.ledColor <- colors.Blue
+			case Volume:
+				// find the next volume
+				for i, v := range volumes {
+					if v == a.volume {
+						a.volume = volumes[(i+1)%len(volumes)]
+						break
+					}
+				}
+				log.Printf("Volume set to %d", a.volume)
+				stdin.Write([]byte(fmt.Sprintf("GAIN %d\n", a.volume)))
+				// a.ledColor <- colors.Brown
 			default:
 				log.Println("Unknown control command:", ctrlCmd)
 			}
