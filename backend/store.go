@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 type Store struct {
@@ -46,12 +47,24 @@ func NewStore(storePath string, inNfc <-chan string, inFname chan<- string) (*St
 }
 
 func (s *Store) Run(ctx context.Context) {
+	resetTime := 5 * time.Second
+	resetTicker := time.NewTicker(resetTime)
+	defer resetTicker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			log.Printf("store context done")
 			return
+		case <-resetTicker.C:
+			if s.lastNfc != "" {
+				log.Printf("resetting last NFC tag")
+				s.lastNfc = ""
+			}
 		case nfc := <-s.inNfc:
+			if s.lastNfc == nfc {
+				continue
+			}
+			resetTicker.Reset(resetTime)
 			s.lastNfc = nfc
 			for _, m := range s.data {
 				if m.NfcTag == nfc {

@@ -57,8 +57,9 @@ func (n *Nfc) Run(ctx context.Context) {
 	for {
 		select {
 		case tagId := <-n.driver.Read():
-			log.Printf("Read tag: %s \n", tagId)
-			n.in <- tagId
+			if tagId != "" {
+				n.in <- tagId
+			}
 		case <-ctx.Done():
 			err := n.driver.Stop()
 			if err != nil {

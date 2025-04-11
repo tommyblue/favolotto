@@ -2,7 +2,10 @@
 
 package pn532
 
-import "context"
+import (
+	"context"
+	"log"
+)
 
 type Dummy struct{}
 
@@ -11,6 +14,7 @@ func New() (*Dummy, error) {
 }
 
 func (d *Dummy) Run(ctx context.Context) error {
+	log.Println("Dummy NFC pn532 driver is running")
 	return nil
 }
 

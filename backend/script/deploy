@@ -2,6 +2,6 @@
 
 cd "$(dirname "$0")/.." || exit 1
 
-go build ./cmd/favolotto/
+go build -tags pn532 ./cmd/favolotto/
 sudo mv favolotto /usr/local/bin/favolotto
 sudo systemctl restart favolotto
