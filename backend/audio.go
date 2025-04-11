@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/tommyblue/favolotto/internal/colors"
@@ -152,11 +153,73 @@ func (a *Audio) setup() io.WriteCloser {
 		return nil
 	}
 
-	// Lettura output per debug
+	/* Read command output
+	Specs from /usr/share/doc/mpg321/README.remote:
+
+	@R MPG123
+	mpg123 tagline. Output at startup.
+
+	@I mp3-filename
+	Prints out the filename of the mp3 file, minus the extension, or its ID3
+	informations if available, in the form <title> <artist> <album>
+	<year> <comment> <genre>.
+	Happens after an mp3 file has been loaded.
+
+	@S <a> <b> <c> <d> <e> <f> <g> <h> <i> <j> <k> <l>
+	Outputs information about the mp3 file after loading.
+	<a>: version of the mp3 file. Currently always 1.0 with madlib, but don't
+		depend on it, particularly if you intend portability to mpg123 as well.
+		Float/string.
+	<b>: layer: 1, 2, or 3. Integer.
+	<c>: Samplerate. Integer.
+	<d>: Mode string. String.
+	<e>: Mode extension. Integer.
+	<f>: Bytes per frame (estimate, particularly if the stream is VBR). Integer.
+	<g>: Number of channels (1 or 2, usually). Integer.
+	<h>: Is stream copyrighted? (1 or 0). Integer.
+	<i>: Is stream CRC protected? (1 or 0). Integer.
+	<j>: Emphasis. Integer.
+	<k>: Bitrate, in kbps. (i.e., 128.) Integer.
+	<l>: Extension. Integer.
+
+	@F <current-frame> <frames-remaining> <current-time> <time-remaining>
+	Frame decoding status updates (once per frame).
+	Current-frame and frames-remaining are integers; current-time and
+	time-remaining floating point numbers with two decimal places.
+
+	@P {0, 1, 2, 3}
+	Stop/pause status.
+	0 - Playing has stopped. When 'STOP' is entered, or the mp3 file is finished.
+	1 - Playing is paused. Enter 'PAUSE' or 'P' to continue.
+	2 - Playing has begun again.
+	3 - Song has ended.
+
+	@E <message>
+	Unknown command or missing parameter.
+	*/
 	go func() {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
-			fmt.Println(scanner.Text()) // Debug output mpg321
+			out := scanner.Text()
+			// read first 2 characters for command
+			switch out[:2] {
+			case "@P":
+				switch strings.TrimSpace(out[2:]) {
+				case "0":
+					log.Println("Audio stopped")
+					a.ledColor <- colors.Black
+				case "1":
+					log.Println("Audio paused")
+					a.ledColor <- colors.Blue
+				case "2":
+					log.Println("Audio resumed")
+					a.ledColor <- colors.Green
+				case "3":
+					log.Println("Audio finished")
+					a.currentFile = ""
+					a.ledColor <- colors.Black
+				}
+			}
 		}
 	}()
 

@@ -61,10 +61,10 @@ func (s *Store) Run(ctx context.Context) {
 				s.lastNfc = ""
 			}
 		case nfc := <-s.inNfc:
+			resetTicker.Reset(resetTime)
 			if s.lastNfc == nfc {
 				continue
 			}
-			resetTicker.Reset(resetTime)
 			s.lastNfc = nfc
 			for _, m := range s.data {
 				if m.NfcTag == nfc {
