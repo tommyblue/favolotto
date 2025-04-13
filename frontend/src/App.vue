@@ -50,7 +50,7 @@
         <tbody>
           <tr v-for="song in songs" :key="song.nfc_tag">
             <td class="border border-gray-300 p-4 text-gray-500 dark:border-gray-700 dark:text-gray-400">{{ song.nfc_tag
-            }}</td>
+              }}</td>
             <td class="border border-gray-300 p-4 text-gray-500 dark:border-gray-700 dark:text-gray-400">{{ song.name }}
             </td>
             <td class="border border-gray-300 p-4 text-gray-500 dark:border-gray-700 dark:text-gray-400">
@@ -90,7 +90,7 @@
             </DialogDescription>
 
             <div class="mt-6 flex justify-end gap-4">
-              <button @click="deleteSong(currentSongToDelete)"
+              <button @click="deleteSong(currentTagToDelete)"
                 class="bg-red-600 text-white px-5 py-2.5 rounded-md hover:bg-red-700 transition">
                 Yes, delete
               </button>
