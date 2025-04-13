@@ -18,13 +18,21 @@ endif
 
 # CGO settings
 CGO_ENABLED=1
-CGO_CFLAGS=-I/home/asterix/src/rpi/rootfs/usr/local/include \
-					 #
+CGO_CFLAGS= \
+	-I/home/asterix/src/rpi/rootfs/nfc_build/include \
+	-I/home/asterix/src/rpi/rootfs/usr/local/include \
+	#-I/home/asterix/src/rpi/rootfs/include \
+	#
 
-CGO_LDFLAGS=-lnfc_nci_linux -lpthread \
-						-L/home/asterix/src/rpi/rootfs/usr/local/lib \
-						-Wl,-rpath=$(LIB_DIR) \
-						#
+#-lnfc_nci_linux -lpthread -lusb -lpcsclite\
+
+CGO_LDFLAGS= \
+  -lnfc_nci_linux -lpthread -lnfc \
+	-L/home/asterix/src/rpi/rootfs/nfc_build/lib \
+	-L/home/asterix/src/rpi/rootfs/usr/local/lib \
+  #-L/home/asterix/src/rpi/rootfs/lib/arm-linux-gnueabihf \
+	#-Wl,-rpath=/home/asterix/src/rpi/rootfs/lib/  \
+	#
 
 # Compilation flags
 BUILD_FLAGS=-ldflags="-s -w"
