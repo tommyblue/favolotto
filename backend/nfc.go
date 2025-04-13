@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/tommyblue/favolotto/internal/nfc_serial"
 	"github.com/tommyblue/favolotto/internal/pn532"
 	"github.com/tommyblue/favolotto/internal/pn7150"
 )
@@ -29,6 +30,8 @@ func NewNFC(driverName string, in chan<- string) (*Nfc, error) {
 		driver, err = pn7150.New()
 	case "pn532":
 		driver, err = pn532.New()
+	case "serial":
+		driver, err = nfc_serial.New()
 	default:
 		log.Printf("Unknown NFC driver: %s\n", driverName)
 		return nil, fmt.Errorf("unknown NFC driver: %s", driverName)
@@ -58,6 +61,7 @@ func (n *Nfc) Run(ctx context.Context) {
 		select {
 		case tagId := <-n.driver.Read():
 			if tagId != "" {
+				log.Printf("Tag: %v", tagId)
 				n.in <- tagId
 			}
 		case <-ctx.Done():

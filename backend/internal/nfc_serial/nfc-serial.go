@@ -2,8 +2,8 @@ package nfc_serial
 
 import (
 	"context"
-	"fmt"
 	"log"
+	"strings"
 
 	"github.com/pkg/errors"
 	"go.bug.st/serial"
@@ -22,7 +22,7 @@ func New() (*NFCSerial, error) {
 		DataBits: 8,
 		StopBits: serial.OneStopBit,
 	}
-	port, err := serial.Open("/dev/ttyTMP0", mode)
+	port, err := serial.Open("/tmp/ttyTMP0", mode)
 	if err != nil {
 		log.Fatal(err)
 		return nil, errors.Wrap(err, "Cannot initialize the serial Port")
@@ -44,11 +44,17 @@ func (d *NFCSerial) Run(ctx context.Context) error {
 			break
 		}
 		if n == 0 {
-			fmt.Println("\nEOF")
+			errors.Wrap(err, "EOF")
 			continue
 		}
-		fmt.Printf("%v", string(buff[:n]))
-		d.tagChannel <- string(buff[:n])
+		s := string(buff[:n])
+		log.Printf("read: %v", s)
+		l := strings.Split(s, ";")
+		if len(l) == 0 {
+			log.Printf("Invalid scring %v", l)
+			continue
+		}
+		d.tagChannel <- strings.TrimSpace(l[0])
 	}
 	return nil
 }
