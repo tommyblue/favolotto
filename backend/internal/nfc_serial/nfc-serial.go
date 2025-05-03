@@ -4,8 +4,10 @@ import (
 	"context"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/warthog618/gpiod"
 	"go.bug.st/serial"
 )
 
@@ -14,22 +16,50 @@ type NFCSerial struct {
 	port       serial.Port
 }
 
-func New() (*NFCSerial, error) {
+func reset(resetPin int) {
+	log.Println("Resetting the reader..")
+	c, err := gpiod.NewChip("gpiochip0")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	pin, err := c.RequestLine(resetPin, gpiod.AsOutput(1))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	time.Sleep(time.Millisecond * 400)
+	err = pin.SetValue(0)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	time.Sleep(time.Millisecond * 400)
+	err = pin.SetValue(1)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+}
 
+func New() (*NFCSerial, error) {
 	mode := &serial.Mode{
 		BaudRate: 115200,
 		Parity:   serial.NoParity,
 		DataBits: 8,
 		StopBits: serial.OneStopBit,
 	}
-	port, err := serial.Open("/tmp/ttyTMP0", mode)
+	port, err := serial.Open("/dev/ttyS0", mode)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Wrong port to open %v", err)
 		return nil, errors.Wrap(err, "Cannot initialize the serial Port")
 	}
 	port.SetReadTimeout(serial.NoTimeout)
 	port.ResetInputBuffer()
 	port.ResetOutputBuffer()
+
+	// The reset is connected to pin 4
+	reset(4)
 	return &NFCSerial{tagChannel: make(chan string, 10), port: port}, nil
 }
 
@@ -37,26 +67,30 @@ func (d *NFCSerial) Run(ctx context.Context) error {
 	log.Println("NFC over Serial driver is running")
 
 	buff := make([]byte, 120)
+	tag := string("")
 	for {
-		n, err := d.port.Read(buff)
-		if err != nil {
-			errors.Wrap(err, "unable to read from Port")
-			break
+		for {
+			n, err := d.port.Read(buff)
+			if err != nil {
+				errors.Wrap(err, "unable to read from Port")
+				break
+			}
+			if n == 0 {
+				errors.Wrap(err, "EOF")
+				continue
+			}
+			s := string(buff[:n])
+			s = strings.TrimSpace(s)
+			tag = tag + s
+			log.Printf("read: %v", s)
+			if strings.Contains(tag, ";") {
+				tag = strings.ReplaceAll(tag, ";", "")
+				break
+			}
 		}
-		if n == 0 {
-			errors.Wrap(err, "EOF")
-			continue
-		}
-		s := string(buff[:n])
-		log.Printf("read: %v", s)
-		l := strings.Split(s, ";")
-		if len(l) == 0 {
-			log.Printf("Invalid scring %v", l)
-			continue
-		}
-		d.tagChannel <- strings.TrimSpace(l[0])
+		d.tagChannel <- tag
+		tag = string("")
 	}
-	return nil
 }
 
 func (d *NFCSerial) Stop() error {
