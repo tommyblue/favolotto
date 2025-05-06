@@ -14,35 +14,51 @@ import (
 type NFCSerial struct {
 	tagChannel chan string
 	port       serial.Port
+	reset      *gpiod.Line
+	isp        *gpiod.Line
 }
 
-func reset(resetPin int) {
-	log.Println("Resetting the reader..")
-	c, err := gpiod.NewChip("gpiochip0")
+func resetPulse(d *gpiod.Line) error {
+	err := d.SetValue(1)
 	if err != nil {
 		log.Println(err)
-		return
-	}
-	pin, err := c.RequestLine(resetPin, gpiod.AsOutput(1))
-	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 	time.Sleep(time.Millisecond * 400)
-	err = pin.SetValue(0)
+	err = d.SetValue(0)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 	time.Sleep(time.Millisecond * 400)
-	err = pin.SetValue(1)
+	err = d.SetValue(1)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
+	return nil
 }
 
 func New() (*NFCSerial, error) {
+
+	log.Println("Resetting the reader..")
+	c, err := gpiod.NewChip("gpiochip0")
+	if err != nil {
+		log.Printf("Unable to enable port %v", err)
+		return nil, errors.Wrap(err, "Fail to init gpio port")
+	}
+
+	resetPin, err := c.RequestLine(4, gpiod.AsOutput(1))
+	if err != nil {
+		return nil, errors.Wrap(err, "Fail to init reset")
+	}
+
+	// The isp is connected to pin 27
+	ispPin, err := c.RequestLine(27, gpiod.AsOutput(1))
+	if err != nil {
+		return nil, errors.Wrap(err, "Fail to init isp")
+	}
+
 	mode := &serial.Mode{
 		BaudRate: 115200,
 		Parity:   serial.NoParity,
@@ -51,7 +67,7 @@ func New() (*NFCSerial, error) {
 	}
 	port, err := serial.Open("/dev/ttyS0", mode)
 	if err != nil {
-		log.Fatal("Wrong port to open %v", err)
+		log.Printf("Wrong port to open %v", err)
 		return nil, errors.Wrap(err, "Cannot initialize the serial Port")
 	}
 	port.SetReadTimeout(serial.NoTimeout)
@@ -59,8 +75,8 @@ func New() (*NFCSerial, error) {
 	port.ResetOutputBuffer()
 
 	// The reset is connected to pin 4
-	reset(4)
-	return &NFCSerial{tagChannel: make(chan string, 10), port: port}, nil
+	resetPulse(resetPin)
+	return &NFCSerial{tagChannel: make(chan string, 10), port: port, reset: resetPin, isp: ispPin}, nil
 }
 
 func (d *NFCSerial) Run(ctx context.Context) error {
@@ -69,6 +85,8 @@ func (d *NFCSerial) Run(ctx context.Context) error {
 	buff := make([]byte, 120)
 	tag := string("")
 	for {
+		startFound := false
+		endFound := false
 		for {
 			n, err := d.port.Read(buff)
 			if err != nil {
@@ -79,12 +97,28 @@ func (d *NFCSerial) Run(ctx context.Context) error {
 				errors.Wrap(err, "EOF")
 				continue
 			}
-			s := string(buff[:n])
-			s = strings.TrimSpace(s)
-			tag = tag + s
-			log.Printf("read: %v", s)
-			if strings.Contains(tag, ";") {
-				tag = strings.ReplaceAll(tag, ";", "")
+
+			s := strings.TrimSpace(string(buff[:n]))
+			idx_start := strings.Index(s, "$")
+			if idx_start != -1 {
+				startFound = true
+			}
+
+			log.Println(s)
+			if !startFound {
+				continue
+			}
+
+			tag = tag + s[idx_start+1:]
+
+			idx_end := strings.Index(tag, "#")
+			if idx_end != -1 {
+				endFound = true
+			}
+
+			log.Println(tag)
+			if endFound {
+				tag = tag[:idx_end-1]
 				break
 			}
 		}
