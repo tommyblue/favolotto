@@ -182,6 +182,11 @@ https://github.com/NXPNFCLinux/linux_libnfc-nci_examples
 - GND -> GND
 - Int -> GPIO23
 
+#### Buttons:
+- GPIO22 -> Button Left
+- GPIO23 -> Button Middle
+- GPIO24 -> Button Right
+
 ### Result
 
 This is an initial prototype:
