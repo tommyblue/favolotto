@@ -7,18 +7,18 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/warthog618/gpiod"
+	"github.com/warthog618/go-gpiocdev"
 	"go.bug.st/serial"
 )
 
 type NFCSerial struct {
 	tagChannel chan string
 	port       serial.Port
-	reset      *gpiod.Line
-	isp        *gpiod.Line
+	reset      *gpiocdev.Line
+	isp        *gpiocdev.Line
 }
 
-func resetPulse(d *gpiod.Line) error {
+func resetPulse(d *gpiocdev.Line) error {
 	err := d.SetValue(1)
 	if err != nil {
 		log.Println(err)
@@ -42,19 +42,19 @@ func resetPulse(d *gpiod.Line) error {
 func New() (*NFCSerial, error) {
 
 	log.Println("Resetting the reader..")
-	c, err := gpiod.NewChip("gpiochip0")
+	c, err := gpiocdev.NewChip("gpiochip0")
 	if err != nil {
 		log.Printf("Unable to enable port %v", err)
 		return nil, errors.Wrap(err, "Fail to init gpio port")
 	}
 
-	resetPin, err := c.RequestLine(4, gpiod.AsOutput(1))
+	resetPin, err := c.RequestLine(4, gpiocdev.AsOutput(1))
 	if err != nil {
 		return nil, errors.Wrap(err, "Fail to init reset")
 	}
 
 	// The isp is connected to pin 27
-	ispPin, err := c.RequestLine(27, gpiod.AsOutput(1))
+	ispPin, err := c.RequestLine(27, gpiocdev.AsOutput(1))
 	if err != nil {
 		return nil, errors.Wrap(err, "Fail to init isp")
 	}
@@ -70,6 +70,8 @@ func New() (*NFCSerial, error) {
 		log.Printf("Wrong port to open %v", err)
 		return nil, errors.Wrap(err, "Cannot initialize the serial Port")
 	}
+	defer port.Close()
+
 	port.SetReadTimeout(serial.NoTimeout)
 	port.ResetInputBuffer()
 	port.ResetOutputBuffer()
