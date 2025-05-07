@@ -7,6 +7,10 @@ github.com/creack/goselect
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/warthog618/go-gpiocdev v0.9.1
+## explicit; go 1.19
+github.com/warthog618/go-gpiocdev
+github.com/warthog618/go-gpiocdev/uapi
 # github.com/warthog618/gpiod v0.8.3
 ## explicit; go 1.17
 github.com/warthog618/gpiod
