@@ -24,13 +24,13 @@ func resetPulse(d *gpiocdev.Line) error {
 		log.Println(err)
 		return err
 	}
-	time.Sleep(time.Millisecond * 400)
+	time.Sleep(time.Millisecond * 200)
 	err = d.SetValue(0)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	time.Sleep(time.Millisecond * 400)
+	time.Sleep(time.Millisecond * 200)
 	err = d.SetValue(1)
 	if err != nil {
 		log.Println(err)
@@ -48,6 +48,7 @@ func New() (*NFCSerial, error) {
 		return nil, errors.Wrap(err, "Fail to init gpio port")
 	}
 
+	// The isp is connected to pin 4
 	resetPin, err := c.RequestLine(4, gpiocdev.AsOutput(1))
 	if err != nil {
 		return nil, errors.Wrap(err, "Fail to init reset")
@@ -70,21 +71,20 @@ func New() (*NFCSerial, error) {
 		log.Printf("Wrong port to open %v", err)
 		return nil, errors.Wrap(err, "Cannot initialize the serial Port")
 	}
-	defer port.Close()
+	//defer port.Close()
 
 	port.SetReadTimeout(serial.NoTimeout)
 	port.ResetInputBuffer()
 	port.ResetOutputBuffer()
 
-	// The reset is connected to pin 4
-	resetPulse(resetPin)
 	return &NFCSerial{tagChannel: make(chan string, 10), port: port, reset: resetPin, isp: ispPin}, nil
 }
 
 func (d *NFCSerial) Run(ctx context.Context) error {
 	log.Println("NFC over Serial driver is running")
+	resetPulse(d.reset)
 
-	buff := make([]byte, 120)
+	buff := make([]byte, 240)
 	tag := string("")
 	for {
 		startFound := false
@@ -92,11 +92,12 @@ func (d *NFCSerial) Run(ctx context.Context) error {
 		for {
 			n, err := d.port.Read(buff)
 			if err != nil {
-				errors.Wrap(err, "unable to read from Port")
+				log.Printf("unable to read from Port %v", err)
 				break
 			}
+			log.Println(n)
 			if n == 0 {
-				errors.Wrap(err, "EOF")
+				log.Printf("EoF %v", err)
 				continue
 			}
 
@@ -106,7 +107,6 @@ func (d *NFCSerial) Run(ctx context.Context) error {
 				startFound = true
 			}
 
-			log.Println(s)
 			if !startFound {
 				continue
 			}
@@ -118,7 +118,6 @@ func (d *NFCSerial) Run(ctx context.Context) error {
 				endFound = true
 			}
 
-			log.Println(tag)
 			if endFound {
 				tag = tag[:idx_end-1]
 				break
