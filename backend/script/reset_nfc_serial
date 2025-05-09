@@ -1,0 +1,32 @@
+#!/bin/bash
+
+RESET=/sys/class/gpio/gpio4/value
+ISP=/sys/class/gpio/gpio27/value
+
+
+if [ -e $ISP ]; then
+  echo 27 >  /sys/class/gpio/export
+fi
+
+if [ -e $RESET ]; then
+  echo 4 >  /sys/class/gpio/export
+fi
+
+case $1 in
+  "reset")
+  echo 1 > $RESET
+  sleep 0.5
+  echo 0 > $RESET
+  sleep 0.5
+  echo 1 > $RESET
+  ;;
+  "isp")
+  ;;
+  *)
+    echo "Wrong command"
+    exit(1)
+  ;;
+esac
+
+
+
