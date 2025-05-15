@@ -1,12 +1,29 @@
 # Favolotto
 
-![Favolotto](favolotto.png)
+<img alt="Favolotto" src="favolotto.jpg" width="600px" />
+
+Favolotto is a magical audio storyteller designed to spark children’s imagination.
+Just place a story character on Favolotto, and the corresponding tale begins to play—automatically and effortlessly.  
+With a simple and intuitive web interface, parents can easily upload new MP3 stories and link them to specific characters using NFC tags.  
+While Favolotto is made with kids in mind, it's built on the versatile Raspberry Pi Zero platform, making it a powerful and flexible audio player that can bring any NFC-tagged audio content to life.
+
+Favolotto is ready to use, but there's still plenty of work ahead. Here’s a list of features we’d like to develop next:
+
+- Set the Raspberry Pi OS to read-only mode, except during file uploads.
+- Enhance the UI to display additional details for each MP3 file, such as duration.
+- Enable MP3 downloads directly from the UI.
+- If the device is paused and a different tag is placed, the new file should start playing automatically.
+- Stop playback a few seconds after a tag is removed, and resume from the same point if the same tag is placed again.
+- Support multiple MP3 files per tag and allow track skipping via a button.
+- Monitor battery level and play a warning sound when it's low.
+- Play a short sound to indicate the system is ready after startup.
+- Implement automatic shutdown or hibernation after a period of inactivity.
 
 ## Hardware
 
 - [Raspberry Pi Zero 2 W](https://www.raspberrypi.com/products/raspberry-pi-zero-2-w/) or [Raspberry Pi Zero W](https://www.raspberrypi.com/products/raspberry-pi-zero-w/)
 - [Keyestudio 5V ReSpeaker 2-Mic Pi HAT V1.0](https://www.keyestudio.com/products/keyestudio-5v-respeaker-2-mic-pi-hat-v10-expansion-board-for-raspberry-pi-3b-4b)
-- PN532 NFC reader
+- PN532 or PN7150 NFC reader
 - 3 Watt speaker
 - MicroSD card
 - Power bank
@@ -183,6 +200,7 @@ https://github.com/NXPNFCLinux/linux_libnfc-nci_examples
 - Int -> GPIO23
 
 #### Buttons:
+
 - GPIO22 -> Button Left
 - GPIO23 -> Button Middle
 - GPIO24 -> Button Right
