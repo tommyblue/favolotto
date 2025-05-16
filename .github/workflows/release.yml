@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - release
+    # tags:
+    #   - 'v*' 
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          latest: true
+          cache: true
+      
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-release-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Set up Node.js for React
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+
+      - name: Install React dependencies
+        working-directory: ./frontend
+        run: npm ci --prefer-offline --no-audit --progress=false
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache
+          key: ${{ runner.os }}-node-release-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Build React app
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Create builds directory
+        run: mkdir -p builds
+
+      - name: Build Go binaries
+        working-directory: ./backend
+        run: |
+          # ARM64 (Pi 3/4/5 with 64-bit OS)
+          GOOS=linux GOARCH=arm64 go build -tags pn532 -ldflags="-s -w -X 'main.version=${{ github.ref_name }}'" -o dist/favolotto-aarch64 ./cmd/favolotto
+          GOOS=linux GOARCH=arm64 go build -tags pn7150 -ldflags="-s -w -X 'main.version=${{ github.ref_name }}'" -o dist/favolotto-aarch64 ./cmd/favolotto
+          # ARMv6 (Pi Zero)
+          GOOS=linux GOARCH=arm GOARM=6 go build -tags pn532 -ldflags="-s -w -X 'main.version=${{ github.ref_name }}'" -o dist/favolotto-armv6l ./cmd/favolotto
+          GOOS=linux GOARCH=arm GOARM=6 go build -tags pn7150 -ldflags="-s -w -X 'main.version=${{ github.ref_name }}'" -o dist/favolotto-armv6l ./cmd/favolotto
+          # ARMv7 (Pi 3/4, 32-bit OS)
+          GOOS=linux GOARCH=arm GOARM=7 go build -tags pn532 -ldflags="-s -w -X 'main.version=${{ github.ref_name }}'" -o dist/favolotto-armv7l ./cmd/favolotto
+          GOOS=linux GOARCH=arm GOARM=7 go build -tags pn7150 -ldflags="-s -w -X 'main.version=${{ github.ref_name }}'" -o dist/favolotto-armv7l ./cmd/favolotto
+
+      - name: Copy React build to release folder
+        run: |
+          zip -r builds/frontend.zip frontend/dist
+
+      - name: Copy Go build to release folder
+        run: |
+          cp backend/dist/* builds/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            builds/favolotto-aarch64
+            builds/favolotto-armv6l
+            builds/favolotto-armv7l
+            builds/frontend.zip
