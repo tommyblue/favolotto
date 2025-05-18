@@ -9,7 +9,7 @@ import (
 
 type Dummy struct{}
 
-func New() (*Dummy, error) {
+func New(rstNfc chan<- bool) (*Dummy, error) {
 	return &Dummy{}, nil
 }
 
