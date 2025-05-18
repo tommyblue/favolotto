@@ -8,7 +8,6 @@ import (
 
 	"github.com/tommyblue/favolotto/internal/nfc_serial"
 	"github.com/tommyblue/favolotto/internal/pn532"
-	"github.com/tommyblue/favolotto/internal/pn7150"
 )
 
 type NfcDriver interface {
@@ -26,8 +25,6 @@ func NewNFC(driverName string, in chan<- string, rstNfc chan<- bool) (*Nfc, erro
 	var driver NfcDriver
 	var err error
 	switch driverName {
-	case "pn7150":
-		driver, err = pn7150.New()
 	case "pn532":
 		driver, err = pn532.New(rstNfc)
 	case "serial":

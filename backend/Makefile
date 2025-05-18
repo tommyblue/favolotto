@@ -19,26 +19,20 @@ endif
 # CGO settings
 CGO_ENABLED=1
 CGO_CFLAGS= \
-	-I/home/asterix/src/rpi/rootfs/nfc_build/include \
-	-I/home/asterix/src/rpi/rootfs/usr/local/include \
-	#-I/home/asterix/src/rpi/rootfs/include \
+	#-I/home/asterix/src/rpi/rootfs/nfc_build/include \
+	#-I/home/asterix/src/rpi/rootfs/usr/local/include \
 	#
 
-#-lnfc_nci_linux -lpthread -lusb -lpcsclite\
-
 CGO_LDFLAGS= \
-  -lnfc_nci_linux -lpthread -lnfc \
-	-L/home/asterix/src/rpi/rootfs/nfc_build/lib \
-	-L/home/asterix/src/rpi/rootfs/usr/local/lib \
-  #-L/home/asterix/src/rpi/rootfs/lib/arm-linux-gnueabihf \
-	#-Wl,-rpath=/home/asterix/src/rpi/rootfs/lib/  \
+	#-L/home/asterix/src/rpi/rootfs/nfc_build/lib \
+	#-L/home/asterix/src/rpi/rootfs/usr/local/lib \
 	#
 
 # Compilation flags
 BUILD_FLAGS=-ldflags="-s -w"
 
 # Build tags
-BUILD_TAGS=--tags "pn532 pn7150"
+BUILD_TAGS=--tags "nfc_serial"
 
 # Output folder
 BUILD_DIR=bin

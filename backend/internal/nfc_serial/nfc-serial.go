@@ -1,3 +1,5 @@
+//go:build nfc_serial
+
 package nfc_serial
 
 import (
