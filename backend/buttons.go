@@ -2,40 +2,23 @@ package favolotto
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
-	"github.com/warthog618/go-gpiocdev"
+	"periph.io/x/conn/v3/gpio"
 )
 
-var buttonsMap = map[int]string{
-	22: Pause,  // "btnLeft":
-	23: Resume, // "btnMid":
-	24: Stop,   // "btnRight":
-}
-
 type Buttons struct {
-	in      chan<- string
-	pins    *gpiocdev.Lines
-	offsets []int
+	in     chan<- string
+	btn    []string
+	btnPin []*gpio.PinIO
 }
 
-func NewButton(in chan<- string) (*Buttons, error) {
-	offsets := []int{}
-	for x := range buttonsMap {
-		offsets = append(offsets, x)
-	}
-	pins, err := gpiocdev.RequestLines("/dev/gpiochip0", offsets, gpiocdev.AsInput)
-	if err != nil {
-		fmt.Printf("Requesting lines returned error: %s\n", err)
-	}
-	//defer pins.Close()
-
+func NewButton(in chan<- string, btnFn []string, btns []*gpio.PinIO) (*Buttons, error) {
 	return &Buttons{
-		in:      in,
-		pins:    pins,
-		offsets: offsets,
+		in:     in,
+		btn:    btnFn,
+		btnPin: btns,
 	}, nil
 }
 
@@ -46,33 +29,26 @@ func (b *Buttons) Run(ctx context.Context) {
 		return
 	}
 
-	pressed := []bool{}
-	for _ = range b.offsets {
-		pressed = append(pressed, false)
+	pressed := make(map[string]bool)
+	for _, btnFn := range b.btn {
+		pressed[btnFn] = false
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("button context done")
 			return
 		default:
-			time.Sleep(100 * time.Millisecond) // debounce time
-
-			readValues := []int{0, 0, 0}
-			err := b.pins.Values(readValues)
-			if err != nil {
-				continue
-			}
-
-			for idx := range b.offsets {
-				if readValues[idx] == 0 {
-					pressed[idx] = true
-				} else if pressed[idx] {
-					pressed[idx] = false
-					b.in <- buttonsMap[b.offsets[idx]]
+			for n, pin := range b.btnPin {
+				btnFn := b.btn[n]
+				if (*pin).Read() == gpio.Low {
+					pressed[btnFn] = true
+				} else if pressed[btnFn] {
+					pressed[btnFn] = false
+					b.in <- btnFn
 				}
 			}
+			time.Sleep(100 * time.Millisecond) // debounce time
 		}
 	}
 

@@ -10,7 +10,6 @@ import (
 
 	"github.com/clausecker/nfc/v2"
 	"github.com/pkg/errors"
-	"github.com/warthog618/gpiod"
 )
 
 var modulations = []nfc.Modulation{
@@ -25,49 +24,12 @@ var modulations = []nfc.Modulation{
 type TagReader struct {
 	tagChannel chan string
 	reader     *nfc.Device
-	resetPin   int
 }
 
-// Reset performs a hardware reset by pulling the ResetPin low and then releasing.
-func reset(resetPin int) {
-	log.Println("Resetting the reader..")
-
-	c, err := gpiod.NewChip("gpiochip0")
-	pin, err := c.RequestLine(resetPin, gpiod.AsOutput(0))
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	err = pin.SetValue(1)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	time.Sleep(time.Millisecond * 400)
-	err = pin.SetValue(0)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	time.Sleep(time.Millisecond * 400)
-
-	err = pin.SetValue(1)
-	time.Sleep(time.Millisecond * 100)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-}
-
-func New() (*TagReader, error) {
-	var resetPin = 19
-
+func New(rstNfc chan<- bool) (*TagReader, error) {
 	dev, err := nfc.Open("")
 	if err != nil {
-		reset(resetPin)
+		rstNfc <- true
 		return nil, errors.Wrap(err, "Cannot communicate with the device")
 	}
 
@@ -75,7 +37,7 @@ func New() (*TagReader, error) {
 		return nil, errors.Wrap(err, "Cannot initialize the reader")
 	}
 
-	return &TagReader{reader: &dev, tagChannel: make(chan string, 10), resetPin: resetPin}, nil
+	return &TagReader{reader: &dev, tagChannel: make(chan string, 10)}, nil
 }
 
 func (reader *TagReader) Stop() error {

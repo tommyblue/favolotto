@@ -4,61 +4,36 @@ import (
 	"context"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
-	"github.com/warthog618/go-gpiocdev"
 	"go.bug.st/serial"
 )
 
 type NFCSerial struct {
 	tagChannel chan string
 	port       serial.Port
-	reset      *gpiocdev.Line
-	isp        *gpiocdev.Line
 }
 
-func resetPulse(d *gpiocdev.Line) error {
-	err := d.SetValue(1)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	time.Sleep(time.Millisecond * 200)
-	err = d.SetValue(0)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	time.Sleep(time.Millisecond * 200)
-	err = d.SetValue(1)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return nil
-}
-
-func New() (*NFCSerial, error) {
-
+func New(rstNfc chan<- bool) (*NFCSerial, error) {
 	log.Println("Resetting the reader..")
-	c, err := gpiocdev.NewChip("gpiochip0")
-	if err != nil {
-		log.Printf("Unable to enable port %v", err)
-		return nil, errors.Wrap(err, "Fail to init gpio port")
-	}
+	rstNfc <- true
+	// c, err := gpiocdev.NewChip("gpiochip0")
+	// if err != nil {
+	// 	log.Printf("Unable to enable port %v", err)
+	// 	return nil, errors.Wrap(err, "Fail to init gpio port")
+	// }
 
-	// The isp is connected to pin 4
-	resetPin, err := c.RequestLine(4, gpiocdev.AsOutput(1))
-	if err != nil {
-		return nil, errors.Wrap(err, "Fail to init reset")
-	}
+	// // The isp is connected to pin 4
+	// resetPin, err := c.RequestLine(4, gpiocdev.AsOutput(1))
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "Fail to init reset")
+	// }
 
-	// The isp is connected to pin 27
-	ispPin, err := c.RequestLine(27, gpiocdev.AsOutput(1))
-	if err != nil {
-		return nil, errors.Wrap(err, "Fail to init isp")
-	}
+	// // The isp is connected to pin 27
+	// ispPin, err := c.RequestLine(27, gpiocdev.AsOutput(1))
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "Fail to init isp")
+	// }
 
 	mode := &serial.Mode{
 		BaudRate: 115200,
@@ -77,12 +52,12 @@ func New() (*NFCSerial, error) {
 	port.ResetInputBuffer()
 	port.ResetOutputBuffer()
 
-	return &NFCSerial{tagChannel: make(chan string, 10), port: port, reset: resetPin, isp: ispPin}, nil
+	return &NFCSerial{tagChannel: make(chan string, 10), port: port}, nil
 }
 
 func (d *NFCSerial) Run(ctx context.Context) error {
 	log.Println("NFC over Serial driver is running")
-	resetPulse(d.reset)
+	//resetPulse(d.reset)
 
 	buff := make([]byte, 240)
 	tag := string("")
@@ -95,7 +70,6 @@ func (d *NFCSerial) Run(ctx context.Context) error {
 				log.Printf("unable to read from Port %v", err)
 				break
 			}
-			log.Println(n)
 			if n == 0 {
 				log.Printf("EoF %v", err)
 				continue

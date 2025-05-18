@@ -22,16 +22,16 @@ type Nfc struct {
 	in     chan<- string
 }
 
-func NewNFC(driverName string, in chan<- string) (*Nfc, error) {
+func NewNFC(driverName string, in chan<- string, rstNfc chan<- bool) (*Nfc, error) {
 	var driver NfcDriver
 	var err error
 	switch driverName {
 	case "pn7150":
 		driver, err = pn7150.New()
 	case "pn532":
-		driver, err = pn532.New()
+		driver, err = pn532.New(rstNfc)
 	case "serial":
-		driver, err = nfc_serial.New()
+		driver, err = nfc_serial.New(rstNfc)
 	default:
 		log.Printf("Unknown NFC driver: %s\n", driverName)
 		return nil, fmt.Errorf("unknown NFC driver: %s", driverName)
