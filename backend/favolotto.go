@@ -12,11 +12,15 @@ import (
 )
 
 type Config struct {
-	Host        string `json:"host"`
-	Port        int    `json:"port"`
-	Store       string `json:"store"`
-	Development bool   `json:"development"`
-	NfcDriver   string `json:"nfc_driver"`
+	Host        string   `json:"host"`
+	Port        int      `json:"port"`
+	Store       string   `json:"store"`
+	Development bool     `json:"development"`
+	BtnPins     []string `json:"btn_pins"`
+	BtnFn       []string `json:"btn_fn"`
+	NfcDriver   string   `json:"nfc_driver"`
+	NfcReset    string   `json:"nfc_reset"`
+	NfcIsp      string   `json:"nfc_isp"`
 }
 
 type Favolotto struct {
@@ -40,6 +44,7 @@ func (f *Favolotto) Run(ctx context.Context) error {
 	ctx = context.WithValue(ctx, CtxDevelopment, f.config.Development)
 
 	inNfc := make(chan string)          // channel for NFC tag IDs
+	rstNfc := make(chan bool)           // Reset the NFC reader
 	inFname := make(chan string)        // channel for audio files to play
 	ctrl := make(chan string)           // channel for control commands
 	ledColor := make(chan colors.Color) // channel for LED color commands
@@ -83,8 +88,14 @@ func (f *Favolotto) Run(ctx context.Context) error {
 
 	wg := &sync.WaitGroup{}
 
-	led := NewLED(ledColor)
+	iomap, err := NewIoMap(f.config, rstNfc)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		iomap.Run(ctx)
+	}()
 
+	led := NewLED(ledColor)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -121,7 +132,7 @@ func (f *Favolotto) Run(ctx context.Context) error {
 		httpServer.Run(ctx)
 	}()
 
-	nfc, err := NewNFC(f.config.NfcDriver, inNfc)
+	nfc, err := NewNFC(f.config.NfcDriver, inNfc, rstNfc)
 	if err != nil {
 		log.Fatal("Error creating NFC: ", err.Error())
 	}
@@ -132,7 +143,7 @@ func (f *Favolotto) Run(ctx context.Context) error {
 		nfc.Run(ctx)
 	}()
 
-	button, err := NewButton(ctrl)
+	button, err := NewButton(ctrl, f.config.BtnFn, iomap.Btns)
 	if err != nil {
 		log.Fatal("Error creating button: ", err.Error())
 	}
