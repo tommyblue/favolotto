@@ -39,16 +39,19 @@ Use [Raspberry Pi Imager](https://www.raspberrypi.com/software/) to prepare the 
 Boot the Rpi with the SD card inserted and connect to it through SSH.
 Run `sudo raspi-config`and enable I2C (`Interface Options > I2C`). Don't forget to expand the filesystem from `Advanced Options > Expand Filesystem`.
 
-### I2C
+### I2C and SPI
 
-Before starting, enable I2C running `sudo raspi-config` and going to `Interface Options > I2C > Enable`, then reboot.  
-You should then see the I2C module loaded with `lsmod | grep i2c`.
+Before starting, enable I2C and SPI running `sudo raspi-config` and going to `Interface Options > I2C > Enable` and `Interface Options > SPI > Enable`, then reboot.  
+
+You should then see the I2C modules loaded with `lsmod | grep i2c` and the SPI modules with `lsmod | grep spi`.
 
 If not, try loading the modules manually:
 
 ```sh
 sudo modprobe i2c-dev
 sudo modprobe i2c-bcm2835
+sudo modprobe spidev
+sudo modprobe spi_bcm2835
 ```
 
 ### Audio hat
