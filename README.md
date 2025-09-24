@@ -81,6 +81,9 @@ cd WM8960-Audio-HAT/
 sudo ./install.sh
 ```
 
+> At the moment of writing (24th sept 2025) the main branch doesn't work with the 6.12 kernel.
+> You can either try with the [6.12.x](https://github.com/waveshareteam/WM8960-Audio-HAT/tree/6.12.x) branch or [this fork](https://github.com/ubopod/WM8960-Audio-HAT)
+
 Edit the configuration with `sudo vi /boot/firmware/config.txt` and add:
 
 ```
