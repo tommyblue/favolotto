@@ -179,7 +179,7 @@ Waiting for card removing...nfc_initiator_target_is_present: Target Released
 done.
 ```
 
-In the picture below you see another populare PN532 module, but beware that, given the position of the antenna around the other components, in my experience it doesn't work well (or doesn't work at all).
+In the picture below you see another popular PN532 module, but beware that, given the position of the antenna around the other components, in my experience it doesn't work well (or doesn't work at all).
 
 ![Do not use this one](pictures/PN532-no.jpg)
 
