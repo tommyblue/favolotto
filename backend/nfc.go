@@ -68,7 +68,6 @@ func (n *Nfc) Run(ctx context.Context) {
 			log.Printf("NFC context done")
 			return
 		default:
-			// log.Printf("%s: Waiting for a tag \n", time.Now().String())
 			time.Sleep(time.Millisecond * 300)
 		}
 	}

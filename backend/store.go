@@ -50,6 +50,7 @@ func (s *Store) Run(ctx context.Context) {
 	resetTime := 5 * time.Second
 	resetTicker := time.NewTicker(resetTime)
 	defer resetTicker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -59,6 +60,8 @@ func (s *Store) Run(ctx context.Context) {
 			if s.lastNfc != "" {
 				log.Printf("resetting last NFC tag")
 				s.lastNfc = ""
+				// stop audio playback
+				s.inFname <- ""
 			}
 		case nfc := <-s.inNfc:
 			resetTicker.Reset(resetTime)

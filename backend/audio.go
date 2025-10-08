@@ -75,6 +75,11 @@ func (a *Audio) Run(ctx context.Context) {
 			log.Println("Audio context done")
 			return
 		case fname := <-a.in:
+			if fname == "" && a.currentFile != "" {
+				a.stop(stdin)
+				break
+			}
+
 			// if the same file is requested, do nothing
 			// TODO: if the file is the same but the audio is paused, resume it
 			if a.currentFile == fname {
@@ -130,10 +135,7 @@ func (a *Audio) Run(ctx context.Context) {
 					a.ledColor <- colors.Green
 				}
 			case Stop:
-				stdin.Write([]byte("STOP\n"))
-				a.currentFile = ""
-				atomic.StoreInt32(&a.status, stopped)
-				a.ledColor <- colors.Blue
+				a.stop(stdin)
 			case Volume:
 				// find the next volume
 				for i, v := range volumes {
@@ -150,6 +152,13 @@ func (a *Audio) Run(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func (a *Audio) stop(stdin io.WriteCloser) {
+	stdin.Write([]byte("STOP\n"))
+	a.currentFile = ""
+	atomic.StoreInt32(&a.status, stopped)
+	a.ledColor <- colors.Blue
 }
 
 func (a *Audio) cleanup() {
