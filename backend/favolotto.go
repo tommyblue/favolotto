@@ -3,13 +3,18 @@ package favolotto
 import (
 	"bufio"
 	"context"
+	_ "embed"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/tommyblue/favolotto/internal/colors"
 )
+
+//go:embed store/assets/boot.mp3
+var bootSound []byte
 
 type Config struct {
 	Host        string `json:"host"`
@@ -143,8 +148,31 @@ func (f *Favolotto) Run(ctx context.Context) error {
 		button.Run(ctx)
 	}()
 
+	bootSoundPath := filepath.Join(f.config.Store, "assets", "boot.mp3")
+	if err := ensureBootFile(bootSoundPath); err == nil {
+		inFname <- bootSoundPath
+	}
+
 	wg.Wait()
 
 	<-ctx.Done()
+	return nil
+}
+
+func ensureBootFile(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Printf("File '%s' not found. Creating it now.", path)
+
+		if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create directories: %w", err)
+		}
+
+		if err := os.WriteFile(path, bootSound, 0644); err != nil {
+			return fmt.Errorf("failed to write file: %w", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("error checking file: %w", err)
+	}
+
 	return nil
 }
