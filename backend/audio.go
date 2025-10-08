@@ -9,9 +9,16 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/tommyblue/favolotto/internal/colors"
+)
+
+const (
+	stopped int32 = iota
+	playing
+	paused
 )
 
 type Audio struct {
@@ -24,6 +31,7 @@ type Audio struct {
 	currentFile string
 	currentCmd  *exec.Cmd
 	volume      int
+	status      int32
 }
 
 // List of the possible control commands
@@ -93,6 +101,12 @@ func (a *Audio) Run(ctx context.Context) {
 
 			a.currentFile = fname
 
+			if atomic.LoadInt32(&a.status) == paused {
+				// send a PAUSE command to resume playback
+				stdin.Write([]byte("PAUSE\n"))
+				atomic.StoreInt32(&a.status, playing)
+			}
+
 			stdin.Write([]byte(fmt.Sprintf("LOAD %s\n", fname)))
 			stdin.Write([]byte(fmt.Sprintf("GAIN %d\n", a.volume)))
 			a.ledColor <- colors.Green
@@ -100,13 +114,25 @@ func (a *Audio) Run(ctx context.Context) {
 			switch ctrlCmd {
 			case Pause:
 				stdin.Write([]byte("PAUSE\n"))
+				if a.currentFile == "" {
+					atomic.StoreInt32(&a.status, stopped)
+				} else {
+					atomic.StoreInt32(&a.status, paused)
+				}
 				a.ledColor <- colors.Blue
 			case Resume:
 				stdin.Write([]byte("PAUSE\n"))
-				a.ledColor <- colors.Green
+				if a.currentFile == "" {
+					atomic.StoreInt32(&a.status, stopped)
+					a.ledColor <- colors.Blue
+				} else {
+					atomic.StoreInt32(&a.status, playing)
+					a.ledColor <- colors.Green
+				}
 			case Stop:
 				stdin.Write([]byte("STOP\n"))
 				a.currentFile = ""
+				atomic.StoreInt32(&a.status, stopped)
 				a.ledColor <- colors.Blue
 			case Volume:
 				// find the next volume
