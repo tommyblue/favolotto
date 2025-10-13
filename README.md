@@ -110,6 +110,44 @@ card 1: vc4hdmi [vc4-hdmi], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
 
 Copy an mp3 file to the Rpi and check it works with `mpg321 file.mp3` (`sudo apt install mpg321` if it is not available). If you don't hear anything, check the volume with `alsamixer` (use `m` to mute/unmute channels).
 
+To adjust the volume use `alsamixer`:
+
+```sh
+$ sudo alsamixer
+# Setup the volume, in particular increase the Speaker volume at least at 80%
+$ sudo alsactl store
+```
+
+To make this change permanent, you must create a boot script. First, store the settings to the settings file:
+
+```sh
+sudo alsactl -f /etc/wm8960-soundcard/wm8960_asound.state store
+```
+
+Then create the systemd file at `/etc/systemd/system/restore-wm8960-volume.service` and paste the following text:
+
+```
+[Unit]
+Description=Ripristina volume WM8960
+After=sound.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/alsactl -f /etc/wm8960-soundcard/wm8960_asound.state restore
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then enable it:
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl enable restore-wm8960-volume.service
+```
+
+After the reboot, the volume should be at the right level. You can check it with `amixer sget Speaker`.
+
 ### NFC
 
 #### PN532 module
