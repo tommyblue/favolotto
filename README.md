@@ -20,6 +20,8 @@ Favolotto is ready to use, but there's still plenty of work ahead. Here’s a li
 - Implement automatic shutdown or hibernation after a period of inactivity.
 - Create an installer to setup the device
 
+> on 10-25-2025 I gave a talk about Favolotto at Linux Day in Prato. You can find the slides (in italian) at [linux-day-2025-slides-it.pdf](./linux-day-2025-slides-it.pdf)
+
 ## Hardware
 
 - [Raspberry Pi Zero 2 W](https://www.raspberrypi.com/products/raspberry-pi-zero-2-w/) or [Raspberry Pi Zero W](https://www.raspberrypi.com/products/raspberry-pi-zero-w/)
